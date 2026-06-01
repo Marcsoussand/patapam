@@ -1,0 +1,42 @@
+{
+  "app": {
+    "title": "עולם פטפם"
+  },
+  "nav": {
+    "clearing": "המרחב",
+    "cabin": "הצריף שלי",
+    "collection": "האלבום שלי",
+    "parent": "פינת ההורים"
+  },
+  "auth": {
+    "login": "כניסה",
+    "logout": "יציאה",
+    "email": "אימייל",
+    "password": "סיסמה",
+    "loginError": "אימייל או סיסמה שגויים"
+  },
+  "profile": {
+    "choose": "מי משחק?",
+    "addProfile": "הוספת ילד",
+    "coins": "מטבעות"
+  },
+  "zones": {
+    "dauphinou": "חוף דולפינוש",
+    "tartuffe": "הר טרטופי",
+    "mollasson": "יער נמנומי",
+    "bobby": "כפר בובי"
+  },
+  "rewards": {
+    "newCoins": "+{{count}} מטבע",
+    "newCard": "כרטיס חדש!",
+    "levelUp": "שלב חדש נפתח!"
+  },
+  "common": {
+    "loading": "טוען…",
+    "error": "משהו השתבש",
+    "back": "חזרה",
+    "continue": "המשך",
+    "play": "שחק",
+    "locked": "נעול"
+  }
+}

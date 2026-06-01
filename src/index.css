@@ -1,0 +1,20 @@
+@import "tailwindcss";
+
+/* ── Patapam design tokens ── */
+@theme {
+  --color-patapam-green:  #4caf72;
+  --color-patapam-yellow: #f5c842;
+  --color-patapam-blue:   #3a9bd5;
+  --color-patapam-red:    #e05c5c;
+  --color-patapam-purple: #9b59b6;
+
+  --font-patapam: 'Fredoka One', system-ui, sans-serif;
+  --font-hebrew:  'Heebo', system-ui, sans-serif;
+}
+
+/* Touch targets minimum 60px pour les enfants */
+.touch-target {
+  min-height: 60px;
+  min-width: 60px;
+}
+

@@ -1,0 +1,43 @@
+{
+  "app": {
+    "title": "Patapam's World"
+  },
+  "nav": {
+    "clearing": "The Clearing",
+    "cabin": "My Cabin",
+    "collection": "My Album",
+    "parent": "Parent Space"
+  },
+  "auth": {
+    "login": "Log in",
+    "logout": "Log out",
+    "email": "Email",
+    "password": "Password",
+    "loginError": "Incorrect email or password"
+  },
+  "profile": {
+    "choose": "Who's playing?",
+    "addProfile": "Add a child",
+    "coins": "coins"
+  },
+  "zones": {
+    "dauphinou": "Dolphie's Cove",
+    "tartuffe": "Tartuffe's Mountain",
+    "mollasson": "Mellow's Forest",
+    "bobby": "Bobby's Village"
+  },
+  "rewards": {
+    "newCoins": "+{{count}} coin",
+    "newCoins_plural": "+{{count}} coins",
+    "newCard": "New card!",
+    "levelUp": "Next level unlocked!"
+  },
+  "common": {
+    "loading": "Loading…",
+    "error": "Something went wrong",
+    "back": "Back",
+    "continue": "Continue",
+    "play": "Play",
+    "locked": "Locked"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "app": {
+    "title": "Le Monde de Patapam"
+  },
+  "nav": {
+    "clearing": "La Clairière",
+    "cabin": "Ma Cabane",
+    "collection": "Mon Album",
+    "parent": "Espace Parents"
+  },
+  "auth": {
+    "login": "Se connecter",
+    "logout": "Se déconnecter",
+    "email": "Email",
+    "password": "Mot de passe",
+    "loginError": "Email ou mot de passe incorrect"
+  },
+  "profile": {
+    "choose": "Qui joue ?",
+    "addProfile": "Ajouter un enfant",
+    "coins": "pièces"
+  },
+  "zones": {
+    "dauphinou": "Côte de Dauphinou",
+    "tartuffe": "Montagne de Tartuffe",
+    "mollasson": "Forêt de Mollasson",
+    "bobby": "Village de Bobby"
+  },
+  "rewards": {
+    "newCoins": "+{{count}} pièce",
+    "newCoins_plural": "+{{count}} pièces",
+    "newCard": "Nouvelle carte !",
+    "levelUp": "Niveau suivant débloqué !"
+  },
+  "common": {
+    "loading": "Chargement…",
+    "error": "Une erreur est survenue",
+    "back": "Retour",
+    "continue": "Continuer",
+    "play": "Jouer",
+    "locked": "Verrouillé"
+  }
+}
