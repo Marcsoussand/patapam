@@ -1,5 +1,10 @@
+import { useEffect, useState } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { supabase } from './lib/supabase'
+import { useProfileStore } from './store/profileStore'
+import AppLayout from './components/AppLayout'
 import Login from './pages/Login'
+import AuthCallback from './pages/AuthCallback'
 import ProfileSelect from './pages/ProfileSelect'
 import Clearing from './pages/Clearing'
 import ZoneDauphinou from './pages/zones/ZoneDauphinou'
@@ -10,32 +15,44 @@ import Cabin from './pages/Cabin'
 import Collection from './pages/Collection'
 import ParentDashboard from './pages/ParentDashboard'
 
-// Placeholder guard — remplacé par vrai auth Supabase en Phase 0 auth
 function RequireAuth({ children }: { children: React.ReactNode }) {
-  // TODO: remplacer par supabase.auth.getSession()
-  const isLoggedIn = false
-  return isLoggedIn ? <>{children}</> : <Navigate to="/login" replace />
+  const [checked, setChecked] = useState(false)
+  const [loggedIn, setLoggedIn] = useState(false)
+
+  useEffect(() => {
+    // onAuthStateChange émet INITIAL_SESSION dès que la session est connue
+    // (y compris après échange du code OAuth PKCE) — plus fiable que getSession()
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setLoggedIn(!!session)
+      setChecked(true)
+    })
+    return () => listener.subscription.unsubscribe()
+  }, [])
+
+  if (!checked) return null
+  return loggedIn ? <>{children}</> : <Navigate to="/login" replace />
 }
 
 function RequireProfile({ children }: { children: React.ReactNode }) {
-  // TODO: remplacer par profileStore.activeProfile
-  const hasProfile = false
-  return hasProfile ? <>{children}</> : <Navigate to="/profiles" replace />
+  const activeProfile = useProfileStore((s) => s.activeProfile)
+  return activeProfile ? <>{children}</> : <Navigate to="/profiles" replace />
 }
 
 export default function App() {
   return (
     <BrowserRouter>
-      <Routes>
+      <AppLayout>
+        <Routes>
         {/* Auth */}
         <Route path="/login" element={<Login />} />
+        <Route path="/auth/callback" element={<AuthCallback />} />
 
-        {/* Sélection profil (authentifié mais pas encore de profil choisi) */}
+        {/* Sélection profil */}
         <Route path="/profiles" element={
           <RequireAuth><ProfileSelect /></RequireAuth>
         } />
 
-        {/* App principale (authentifié + profil choisi) */}
+        {/* App principale */}
         <Route path="/" element={
           <RequireAuth><RequireProfile><Clearing /></RequireProfile></RequireAuth>
         } />
@@ -64,6 +81,7 @@ export default function App() {
         {/* Fallback */}
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
+      </AppLayout>
     </BrowserRouter>
   )
 }
