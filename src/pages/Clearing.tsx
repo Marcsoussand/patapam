@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useProfileStore } from '../store/profileStore'
 import { supabase } from '../lib/supabase'
 import patapamImg from '../img/patapam_debout.png'
+import clairiereImg from '../img/patapam_clairiere.png'
 import dauphinou from '../img/dauphinou.png'
 import mollasson from '../img/mollasson.png'
 import bobby from '../img/bobby.png'
@@ -52,9 +53,10 @@ export default function Clearing() {
   const avatarImg = charName ? characterImages[charName] : null
 
   return (
-    <div className="flex flex-col min-h-screen bg-patapam-green">
+    <div className="flex flex-col h-screen overflow-hidden bg-patapam-green">
       {/* Header */}
-      <header className="flex items-center justify-between px-6 py-4 bg-black/10">
+      <header className="flex items-center justify-between px-4 py-3 bg-black/20">
+        {/* Gauche : avatar + nom */}
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-white/30 overflow-hidden flex items-center justify-center text-xl">
             {avatarImg
@@ -64,54 +66,62 @@ export default function Clearing() {
           </div>
           <span className="text-white font-bold text-lg">{profile?.name}</span>
         </div>
+
+        {/* Centre : navigation */}
+        <div className="flex items-center gap-1">
+          <button onClick={() => navigate('/cabin')} className="flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+            <span className="text-xl">🏠</span>
+            <span className="text-xs">Cabane</span>
+          </button>
+          <button className="flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl text-white bg-white/20">
+            <span className="text-xl">🌳</span>
+            <span className="text-xs font-bold">Clairière</span>
+          </button>
+          <button onClick={() => navigate('/collection')} className="flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+            <span className="text-xl">📚</span>
+            <span className="text-xs">Album</span>
+          </button>
+        </div>
+
+        {/* Droite : pièces */}
         <div className="flex items-center gap-1 bg-white/20 rounded-full px-4 py-1">
           <span className="text-yellow-300 text-lg">🪙</span>
           <span className="text-white font-bold">{profile?.coins ?? 0}</span>
         </div>
       </header>
 
-      {/* Titre */}
-      <div className="text-center py-8">
-        <h1 className="text-4xl font-bold text-white drop-shadow">La Clairière</h1>
-        <p className="text-white/70 mt-1">Choisis ta destination !</p>
-      </div>
+      {/* Clairière — image plein écran */}
+      <div className="flex-1 min-h-0 flex items-center justify-center bg-black">
+        <div className="relative" style={{ aspectRatio: '1264/843', height: '100%', maxHeight: '100%', maxWidth: '100%' }}>
+          <img
+            src={clairiereImg}
+            alt="La Clairière de Patapam"
+            className="absolute inset-0 w-full h-full object-fill"
+          />
 
-      {/* Grille des zones */}
-      <div className="grid grid-cols-2 gap-4 px-6 pb-8 flex-1 max-w-lg mx-auto w-full">
-        {ZONES.map((zone) => (
+          {/* Zones cliquables */}
+          {/* Jeux — centre */}
           <button
-            key={zone.id}
-            onClick={() => zone.unlocked && navigate(zone.route)}
-            disabled={!zone.unlocked}
-            className={`
-              touch-target flex flex-col items-center justify-center gap-2 rounded-3xl p-6
-              shadow-lg transition-transform
-              ${zone.unlocked ? `${zone.color} text-white hover:scale-105 active:scale-95` : 'bg-gray-300 text-gray-400'}
-            `}
-            style={zone.unlocked ? {} : { filter: 'saturate(0.2) blur(0px)', opacity: 0.5 }}
+            onClick={() => navigate('/games')}
+            style={{ position: 'absolute', top: '40%', left: '30%', width: '40%', height: '26%' }}
+            className="group flex items-center justify-center border-2 border-transparent hover:border-white/60 hover:bg-white/20 transition-all duration-200 rounded-lg"
           >
-            <span className="text-5xl">{zone.emoji}</span>
-            <span className="font-bold text-sm text-center leading-tight">{zone.label}</span>
-            {!zone.unlocked && <span className="text-xs mt-1">🔒 Verrouillé</span>}
+            <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-white font-bold text-sm drop-shadow-lg bg-black/40 px-2 py-1 rounded-lg">
+              🎮 Les Jeux
+            </span>
           </button>
-        ))}
+          {/* Cabane — haut droite (à ajuster) */}
+          <button
+            onClick={() => navigate('/cabin')}
+            style={{ position: 'absolute', top: '0%', left: '67%', width: '33%', height: '50%' }}
+            className="group flex items-center justify-center border-2 border-transparent hover:border-white/60 hover:bg-white/20 transition-all duration-200 rounded-lg"
+          >
+            <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-white font-bold text-sm drop-shadow-lg bg-black/40 px-2 py-1 rounded-lg">
+              🏠 La Cabane
+            </span>
+          </button>
+        </div>
       </div>
-
-      {/* Barre de navigation */}
-      <nav className="flex justify-around items-center bg-white py-3 border-t border-gray-100">
-        <button onClick={() => navigate('/cabin')} className="flex flex-col items-center gap-1 text-gray-500 hover:text-patapam-green">
-          <span className="text-2xl">🏠</span>
-          <span className="text-xs">Cabane</span>
-        </button>
-        <button className="flex flex-col items-center gap-1 text-patapam-green">
-          <span className="text-2xl">🌳</span>
-          <span className="text-xs font-bold">Clairière</span>
-        </button>
-        <button onClick={() => navigate('/collection')} className="flex flex-col items-center gap-1 text-gray-500 hover:text-patapam-green">
-          <span className="text-2xl">📚</span>
-          <span className="text-xs">Album</span>
-        </button>
-      </nav>
     </div>
   )
 }
