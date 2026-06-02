@@ -12,6 +12,7 @@ import ZoneTartuffe from './pages/zones/ZoneTartuffe'
 import ZoneMollasson from './pages/zones/ZoneMollasson'
 import ZoneBobby from './pages/zones/ZoneBobby'
 import Cabin from './pages/Cabin'
+import Games from './pages/Games'
 import Collection from './pages/Collection'
 import ParentDashboard from './pages/ParentDashboard'
 
@@ -73,6 +74,9 @@ export default function App() {
         } />
         <Route path="/collection" element={
           <RequireAuth><RequireProfile><Collection /></RequireProfile></RequireAuth>
+        } />
+        <Route path="/games" element={
+          <RequireAuth><RequireProfile><Games /></RequireProfile></RequireAuth>
         } />
         <Route path="/parent" element={
           <RequireAuth><ParentDashboard /></RequireAuth>
