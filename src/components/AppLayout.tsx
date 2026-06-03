@@ -22,6 +22,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         {activeProfile && (
           <>
             <div className="w-px h-5 bg-white/40" />
+            <div className="flex items-center gap-1 bg-white/20 rounded-full px-3 py-1">
+              <span className="text-yellow-300 text-base">🪙</span>
+              <span className="text-white font-bold text-sm">{activeProfile.coins}</span>
+            </div>
+            <div className="w-px h-5 bg-white/40" />
             <div className="relative">
               <button
                 onClick={() => setOpen((v) => !v)}
