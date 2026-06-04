@@ -1,12 +1,14 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useProfileStore } from '../store/profileStore'
 import LanguageSelector from './LanguageSelector'
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate()
+  const location = useLocation()
   const { activeProfile, setActiveProfile } = useProfileStore()
   const [open, setOpen] = useState(false)
+  const hideTopOverlay = location.pathname === '/games'
 
   function switchUser() {
     setOpen(false)
@@ -17,10 +19,16 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
       {children}
+      {!hideTopOverlay && (
       <div className="fixed top-3 right-3 z-50 flex items-center gap-2 bg-black/30 backdrop-blur-sm rounded-2xl px-3 py-2 shadow-lg">
         <LanguageSelector />
         {activeProfile && (
           <>
+            <div className="w-px h-5 bg-white/40" />
+            <div className="flex items-center gap-1 bg-white/20 rounded-full px-3 py-1">
+              <span className="text-yellow-300 text-base">🪙</span>
+              <span className="text-white font-bold text-sm">{activeProfile.coins}</span>
+            </div>
             <div className="w-px h-5 bg-white/40" />
             <div className="relative">
               <button
@@ -52,6 +60,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </>
         )}
       </div>
+      )}
     </>
   )
 }
