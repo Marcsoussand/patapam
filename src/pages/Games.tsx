@@ -6,12 +6,16 @@ import gamesAreaImg from '../img/games_area.png'
 import ticTacToeImg from '../img/games/tic_tac_toe.png'
 import memoryImg from '../img/games/memory.png'
 import treasureHuntImg from '../img/games/treasure_hunt.png'
+import treasureCardBackImg from '../img/games/treasure.png'
 import betachouImg from '../img/betachou.png'
 import mollassonImg from '../img/mollasson.png'
 import bobbyImg from '../img/bobby.png'
 import dauphinouImg from '../img/dauphinou.png'
+import lapinouImg from '../img/lapinou.png'
 import tartuffeImg from '../img/tartuffe.png'
 import patapamVictoryImg from '../img/patapam_debout.png'
+import betachouNightImg from '../img/patapam_collection/betachou_night.png'
+import reneLePoneyImg from '../img/patapam_collection/rene_le_poney.png'
 
 type GameKey = 'tictactoe' | 'memory' | 'treasure'
 type TicTacToeLevel = 'random' | 'normal' | 'optimized'
@@ -21,6 +25,24 @@ interface MemoryCard {
   id: string
   token: string
   image: string
+}
+
+type TreasureTileType =
+  | 'dauphinou'
+  | 'lapinou'
+  | 'tartuffe'
+  | 'mollasson'
+  | 'bobby'
+  | 'patapam'
+  | 'betachou'
+  | 'rene'
+
+interface TreasureTile {
+  id: string
+  type: TreasureTileType
+  image: string
+  revealed: boolean
+  collectedBy: 0 | 1 | null
 }
 
 const GAME_ZONES: Array<{ key: GameKey; title: string; top: string; image: string }> = [
@@ -55,6 +77,19 @@ const MEMORY_IMAGE_POOL = [
   tartuffeImg,
 ]
 
+const TREASURE_TILE_CONFIG: Array<{ type: TreasureTileType; count: number; image: string; label: string }> = [
+  { type: 'dauphinou', count: 4, image: dauphinouImg, label: 'Dauphinou' },
+  { type: 'lapinou', count: 4, image: lapinouImg, label: 'Lapinou' },
+  { type: 'tartuffe', count: 4, image: tartuffeImg, label: 'Tartuffe' },
+  { type: 'mollasson', count: 8, image: mollassonImg, label: 'Mollasson' },
+  { type: 'bobby', count: 6, image: bobbyImg, label: 'Bobby' },
+  { type: 'patapam', count: 8, image: patapamVictoryImg, label: 'Patapam' },
+  { type: 'betachou', count: 12, image: betachouNightImg, label: 'Betachou' },
+  { type: 'rene', count: 3, image: reneLePoneyImg, label: 'Rene le Poney' },
+]
+
+const TREASURE_PAIR_TYPES: TreasureTileType[] = ['dauphinou', 'lapinou', 'tartuffe']
+
 function shuffleArray<T>(input: T[]) {
   const list = [...input]
   for (let i = list.length - 1; i > 0; i -= 1) {
@@ -85,8 +120,15 @@ export default function Games() {
   const [matchedMemoryCards, setMatchedMemoryCards] = useState<number[]>([])
   const [isMemoryLocked, setIsMemoryLocked] = useState(false)
   const [memoryWon, setMemoryWon] = useState(false)
+  const [treasureTiles, setTreasureTiles] = useState<TreasureTile[]>([])
+  const [currentTreasurePlayer, setCurrentTreasurePlayer] = useState<0 | 1>(0)
+  const [isTreasureLocked, setIsTreasureLocked] = useState(false)
+  const [treasureGameOver, setTreasureGameOver] = useState(false)
+  const [treasureWinner, setTreasureWinner] = useState<0 | 1 | null>(null)
+  const [treasureMessage, setTreasureMessage] = useState('')
   const aiTimeoutRef = useRef<number | null>(null)
   const memoryTimeoutRef = useRef<number | null>(null)
+  const treasureTimeoutRef = useRef<number | null>(null)
 
   const selectedTitle = GAME_ZONES.find((z) => z.key === selectedGame)?.title
 
@@ -136,15 +178,58 @@ export default function Games() {
     setRewardApplied(false)
   }
 
+  function resetTreasureHunt() {
+    if (treasureTimeoutRef.current !== null) {
+      window.clearTimeout(treasureTimeoutRef.current)
+      treasureTimeoutRef.current = null
+    }
+    setTreasureTiles([])
+    setCurrentTreasurePlayer(0)
+    setIsTreasureLocked(false)
+    setTreasureGameOver(false)
+    setTreasureWinner(null)
+    setTreasureMessage('')
+    setRewardCoins(0)
+    setRewardApplied(false)
+  }
+
+  function startTreasureHunt() {
+    resetTreasureHunt()
+    setGamePhase('play')
+
+    const deck: TreasureTile[] = []
+    for (const cfg of TREASURE_TILE_CONFIG) {
+      for (let idx = 0; idx < cfg.count; idx += 1) {
+        deck.push({
+          id: `${cfg.type}-${idx}`,
+          type: cfg.type,
+          image: cfg.image,
+          revealed: false,
+          collectedBy: null,
+        })
+      }
+    }
+    setTreasureTiles(shuffleArray(deck))
+    setTreasureMessage('Tour du Joueur 1')
+  }
+
   function chooseGame(gameKey: GameKey) {
     setSelectedGame(gameKey)
     if (gameKey === 'tictactoe') {
       setGamePhase('select')
       resetTicTacToe()
       resetMemory()
+      resetTreasureHunt()
     }
     if (gameKey === 'memory') {
       setGamePhase('select')
+      resetMemory()
+      resetTicTacToe()
+      resetTreasureHunt()
+    }
+    if (gameKey === 'treasure') {
+      setGamePhase('select')
+      resetTreasureHunt()
       resetMemory()
       resetTicTacToe()
     }
@@ -223,6 +308,118 @@ export default function Games() {
       setIsMemoryLocked(false)
       memoryTimeoutRef.current = null
     }, 700)
+  }
+
+  function getTreasureCollectableIndices(tiles: TreasureTile[]) {
+    const visibleTiles = tiles
+      .map((tile, index) => ({ tile, index }))
+      .filter(({ tile }) => tile.revealed && tile.collectedBy === null)
+
+    if (visibleTiles.length === 0) return [] as number[]
+
+    const visibleTypes = visibleTiles.map(({ tile }) => tile.type)
+    const onlyBetachou = visibleTypes.every((type) => type === 'betachou')
+    if (onlyBetachou) {
+      return visibleTiles.map(({ index }) => index)
+    }
+
+    const collectable: number[] = []
+    const byType = new Map<TreasureTileType, number[]>()
+    for (const { tile, index } of visibleTiles) {
+      const list = byType.get(tile.type) ?? []
+      list.push(index)
+      byType.set(tile.type, list)
+    }
+
+    const mollasson = byType.get('mollasson') ?? []
+    collectable.push(...mollasson)
+
+    for (const type of TREASURE_PAIR_TYPES) {
+      const list = byType.get(type) ?? []
+      const pairCount = Math.floor(list.length / 2) * 2
+      collectable.push(...list.slice(0, pairCount))
+    }
+
+    const bobbyList = byType.get('bobby') ?? []
+    collectable.push(...bobbyList.slice(0, Math.floor(bobbyList.length / 3) * 3))
+
+    const patapamList = byType.get('patapam') ?? []
+    collectable.push(...patapamList.slice(0, Math.floor(patapamList.length / 4) * 4))
+
+    return collectable
+  }
+
+  function endTreasureTurn(nextPlayer: 0 | 1) {
+    setTreasureTiles((prev) => prev.map((tile) => (
+      tile.collectedBy === null && tile.revealed ? { ...tile, revealed: false } : tile
+    )))
+    setCurrentTreasurePlayer(nextPlayer)
+    setTreasureMessage(`Tour du Joueur ${nextPlayer + 1}`)
+  }
+
+  function handleTreasureBust(reason: 'betachou' | 'rene') {
+    if (treasureGameOver) return
+
+    const nextPlayer: 0 | 1 = currentTreasurePlayer === 0 ? 1 : 0
+    setIsTreasureLocked(true)
+    setTreasureMessage(reason === 'rene' ? 'Rene le Poney! Tour perdu.' : 'Betachou! Tour perdu.')
+
+    treasureTimeoutRef.current = window.setTimeout(() => {
+      endTreasureTurn(nextPlayer)
+      setIsTreasureLocked(false)
+      treasureTimeoutRef.current = null
+    }, 600)
+  }
+
+  function handleTreasureCardClick(index: number) {
+    if (selectedGame !== 'treasure' || gamePhase !== 'play' || treasureGameOver || isTreasureLocked) return
+
+    const target = treasureTiles[index]
+    if (!target || target.collectedBy !== null || target.revealed) return
+
+    const nextTiles = treasureTiles.map((tile, tileIndex) => (
+      tileIndex === index ? { ...tile, revealed: true } : tile
+    ))
+    setTreasureTiles(nextTiles)
+
+    const visibleTypes = nextTiles
+      .filter((tile) => tile.revealed && tile.collectedBy === null)
+      .map((tile) => tile.type)
+
+    // If a Betachou is visible, only Betachou can continue safely.
+    if (target.type !== 'betachou' && visibleTypes.includes('betachou')) {
+      handleTreasureBust('betachou')
+      return
+    }
+
+    if (target.type === 'rene') {
+      handleTreasureBust('rene')
+      return
+    }
+
+    if (target.type === 'betachou') {
+      const hasNonBetachou = visibleTypes.some((type) => type !== 'betachou')
+      if (hasNonBetachou) {
+        handleTreasureBust('betachou')
+        return
+      }
+    }
+
+    setTreasureMessage('Tu peux continuer ou ramasser.')
+  }
+
+  function handleTreasureCollect() {
+    if (selectedGame !== 'treasure' || gamePhase !== 'play' || treasureGameOver || isTreasureLocked) return
+
+    const collectable = getTreasureCollectableIndices(treasureTiles)
+    if (collectable.length === 0) return
+
+    setTreasureTiles((prev) => prev.map((tile, index) => (
+      collectable.includes(index) ? { ...tile, collectedBy: currentTreasurePlayer, revealed: false } : tile
+    )))
+
+    const nextPlayer: 0 | 1 = currentTreasurePlayer === 0 ? 1 : 0
+    endTreasureTurn(nextPlayer)
   }
 
   function bestMove(cells: Cell[], aiMark: 'O' | 'X', humanMark: 'X' | 'O') {
@@ -350,6 +547,39 @@ export default function Games() {
         ? mollassonImg
         : bobbyImg
 
+  const treasureCollectableIndices = useMemo(
+    () => getTreasureCollectableIndices(treasureTiles),
+    [treasureTiles]
+  )
+
+  const treasureCollectedCounts = useMemo(() => {
+    const p1 = treasureTiles.filter((tile) => tile.collectedBy === 0).length
+    const p2 = treasureTiles.filter((tile) => tile.collectedBy === 1).length
+    return [p1, p2] as const
+  }, [treasureTiles])
+
+  const treasureBetachouCounts = useMemo(() => {
+    const p1 = treasureTiles.filter((tile) => tile.collectedBy === 0 && tile.type === 'betachou').length
+    const p2 = treasureTiles.filter((tile) => tile.collectedBy === 1 && tile.type === 'betachou').length
+    return [p1, p2] as const
+  }, [treasureTiles])
+
+  const treasureRows = useMemo(() => {
+    const rowSizes = [10, 10, 10, 10, 9]
+    const rows: Array<Array<{ tile: TreasureTile; index: number }>> = []
+    let start = 0
+
+    for (const size of rowSizes) {
+      const rowTiles = treasureTiles.slice(start, start + size).map((tile, idx) => ({
+        tile,
+        index: start + idx,
+      }))
+      rows.push(rowTiles)
+      start += size
+    }
+    return rows
+  }, [treasureTiles])
+
   useEffect(() => {
     return () => {
       if (aiTimeoutRef.current !== null) {
@@ -357,6 +587,9 @@ export default function Games() {
       }
       if (memoryTimeoutRef.current !== null) {
         window.clearTimeout(memoryTimeoutRef.current)
+      }
+      if (treasureTimeoutRef.current !== null) {
+        window.clearTimeout(treasureTimeoutRef.current)
       }
     }
   }, [])
@@ -379,6 +612,37 @@ export default function Games() {
     awardCoins(memoryLevel)
     setRewardApplied(true)
   }, [selectedGame, gamePhase, memoryWon, rewardApplied, memoryLevel])
+
+  useEffect(() => {
+    if (selectedGame !== 'treasure' || gamePhase !== 'play' || treasureGameOver || treasureTiles.length === 0) return
+
+    const nonReneLeft = treasureTiles.some((tile) => tile.collectedBy === null && tile.type !== 'rene')
+    if (nonReneLeft) return
+
+    const uncollectedRene = treasureTiles.filter((tile) => tile.collectedBy === null && tile.type === 'rene').length
+    const [p1B, p2B] = treasureBetachouCounts
+    let reneAwardTo: 0 | 1 | null = null
+    if (p1B > p2B) reneAwardTo = 0
+    if (p2B > p1B) reneAwardTo = 1
+
+    if (reneAwardTo !== null && uncollectedRene > 0) {
+      setTreasureTiles((prev) => prev.map((tile) => (
+        tile.collectedBy === null && tile.type === 'rene' ? { ...tile, collectedBy: reneAwardTo } : tile
+      )))
+    }
+
+    const p1Total = treasureCollectedCounts[0] + (reneAwardTo === 0 ? uncollectedRene : 0)
+    const p2Total = treasureCollectedCounts[1] + (reneAwardTo === 1 ? uncollectedRene : 0)
+    const winner: 0 | 1 | null = p1Total === p2Total ? null : p1Total > p2Total ? 0 : 1
+
+    setTreasureWinner(winner)
+    setTreasureGameOver(true)
+    if (reneAwardTo === null) {
+      setTreasureMessage('Fin de partie: egalite de Betachou, Rene non attribues.')
+    } else {
+      setTreasureMessage(`Fin de partie: Rene attribues au Joueur ${reneAwardTo + 1}.`)
+    }
+  }, [selectedGame, gamePhase, treasureTiles, treasureGameOver, treasureCollectedCounts, treasureBetachouCounts])
 
   const memoryGridColumns =
     memoryCards.length <= 6
@@ -429,11 +693,12 @@ export default function Games() {
             className="absolute inset-0 w-full h-full object-cover object-center opacity-90"
           />
           <div className="absolute inset-0" style={overlayBackgroundStyle} />
-          <div className="w-[94vw] h-[calc(100vh-7rem)] mt-20 rounded-2xl border border-white/25 bg-white/10 backdrop-blur-md text-white p-6 relative overflow-auto shadow-2xl">
+          <div className="w-[96vw] h-[98vh] rounded-2xl border border-white/25 bg-white/10 backdrop-blur-md text-white p-4 relative overflow-hidden shadow-2xl">
             <button
               onClick={() => {
                 resetTicTacToe()
                 resetMemory()
+                resetTreasureHunt()
                 setSelectedGame(null)
               }}
               aria-label="Fermer"
@@ -679,7 +944,124 @@ export default function Games() {
               </div>
             )}
 
-            {selectedGame !== 'tictactoe' && selectedGame !== 'memory' && (
+            {selectedGame === 'treasure' && gamePhase === 'select' && (
+              <div className="h-[calc(100%-4rem)] flex items-center justify-center">
+                <div className="bg-white/15 border border-white/20 rounded-2xl p-8 flex flex-col items-center gap-5 max-w-xl w-full">
+                  <img src={treasureHuntImg} alt="Chasse au Tresor" className="w-36 h-36 object-contain" />
+                  <h2 className="text-3xl font-black text-white">Mode 2 Joueurs</h2>
+                  <button
+                    onClick={startTreasureHunt}
+                    className="bg-white text-slate-900 font-bold px-6 py-3 rounded-xl hover:scale-105 transition-transform"
+                  >
+                    Lancer la partie
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {selectedGame === 'treasure' && gamePhase === 'play' && (
+              <div className="h-[calc(100%-3.2rem)] -mt-2 flex flex-col gap-1">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-1.5 items-stretch">
+                  <div className="bg-white/12 border border-white/20 rounded-xl p-1.5 flex items-center justify-between gap-2">
+                    <div className="flex flex-col gap-0.5">
+                      <div className="text-[11px] text-white/80">Joueur 1</div>
+                      <div className="text-lg font-black text-white leading-none">{treasureCollectedCounts[0]} cartes</div>
+                      <div className="text-[11px] text-white/70">Betachou: {treasureBetachouCounts[0]}</div>
+                    </div>
+                    <div className="relative w-11 h-14 shrink-0">
+                      <div className="absolute inset-0 rounded-md border border-white/20 bg-black/25 overflow-hidden">
+                        <img src={treasureCardBackImg} alt="Dos de carte" className="w-full h-full object-cover" />
+                      </div>
+                      <div className="absolute top-0.5 left-0.5 right-0.5 bottom-0.5 rounded-md border border-white/20 bg-black/25 overflow-hidden">
+                        <img src={treasureCardBackImg} alt="Dos de carte" className="w-full h-full object-cover" />
+                      </div>
+                      <div className="absolute top-1 left-1 right-1 bottom-1 rounded-md border border-white/20 bg-black/25 overflow-hidden animate-pulse">
+                        <img src={treasureCardBackImg} alt="Dos de carte" className="w-full h-full object-cover" />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-white/12 border border-white/20 rounded-xl p-1.5 flex flex-col items-center justify-center gap-0.5">
+                    <button
+                      onClick={handleTreasureCollect}
+                      disabled={treasureCollectableIndices.length === 0 || isTreasureLocked || treasureGameOver}
+                      className="bg-white text-slate-900 text-[11px] font-bold px-3.5 py-1 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Ramasser
+                    </button>
+                    <div className="text-xs text-white/85 text-center min-h-4">{treasureMessage}</div>
+                    {!treasureGameOver && (
+                      <div className="text-[11px] text-white/75">Tour actif: Joueur {currentTreasurePlayer + 1}</div>
+                    )}
+                    {treasureGameOver && (
+                      <div className="text-xs font-bold text-white">
+                        {treasureWinner === null ? 'Egalite' : `Victoire Joueur ${treasureWinner + 1}`}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="bg-white/12 border border-white/20 rounded-xl p-1.5 flex items-center justify-between gap-2 md:flex-row-reverse">
+                    <div className="flex flex-col gap-0.5 md:items-end">
+                      <div className="text-[11px] text-white/80">Joueur 2</div>
+                      <div className="text-lg font-black text-white leading-none">{treasureCollectedCounts[1]} cartes</div>
+                      <div className="text-[11px] text-white/70">Betachou: {treasureBetachouCounts[1]}</div>
+                    </div>
+                    <div className="relative w-11 h-14 shrink-0">
+                      <div className="absolute inset-0 rounded-md border border-white/20 bg-black/25 overflow-hidden">
+                        <img src={treasureCardBackImg} alt="Dos de carte" className="w-full h-full object-cover" />
+                      </div>
+                      <div className="absolute top-0.5 left-0.5 right-0.5 bottom-0.5 rounded-md border border-white/20 bg-black/25 overflow-hidden">
+                        <img src={treasureCardBackImg} alt="Dos de carte" className="w-full h-full object-cover" />
+                      </div>
+                      <div className="absolute top-1 left-1 right-1 bottom-1 rounded-md border border-white/20 bg-black/25 overflow-hidden animate-pulse">
+                        <img src={treasureCardBackImg} alt="Dos de carte" className="w-full h-full object-cover" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex-1 min-h-0 w-full max-w-[min(96vw,1400px)] mx-auto mt-3 p-0.5 flex flex-col gap-1 justify-center">
+                  {treasureRows.map((row, rowIndex) => (
+                    <div
+                      key={rowIndex}
+                      className={`grid gap-1 ${rowIndex < 4 ? 'grid-cols-10' : 'grid-cols-9 w-[90%] mx-auto'}`}
+                    >
+                      {row.map(({ tile, index }) => {
+                        const isHidden = !tile.revealed && tile.collectedBy === null
+                        const isCollected = tile.collectedBy !== null
+                        return (
+                          <button
+                            key={tile.id}
+                            onClick={() => handleTreasureCardClick(index)}
+                            disabled={isTreasureLocked || treasureGameOver || tile.revealed || isCollected}
+                            className={`aspect-square rounded-lg border transition-colors p-0.5 ${
+                              isCollected
+                                ? tile.collectedBy === 0
+                                  ? 'border-blue-300/70 bg-blue-500/20'
+                                  : 'border-rose-300/70 bg-rose-500/20'
+                                : 'border-white/20 bg-white/10 hover:bg-white/20'
+                            }`}
+                          >
+                            {isHidden && (
+                              <div className="w-full h-full rounded-md border border-white/10 overflow-hidden">
+                                <img src={treasureCardBackImg} alt="Dos de carte" className="w-full h-full object-cover" />
+                              </div>
+                            )}
+                            {!isHidden && (
+                              <div className="relative w-full h-full rounded-lg overflow-hidden">
+                                <img src={tile.image} alt={tile.type} className="w-full h-full object-contain" />
+                              </div>
+                            )}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {selectedGame !== 'tictactoe' && selectedGame !== 'memory' && selectedGame !== 'treasure' && (
               <p className="text-white/75">Espace pret: ici on branchera le jeu du hackathon.</p>
             )}
           </div>
