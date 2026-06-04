@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useProfileStore } from '../store/profileStore'
+import { useProfileStore, type ChildProfile } from '../store/profileStore'
 import { supabase } from '../lib/supabase'
 import gamesAreaImg from '../img/games_area.png'
 import ticTacToeImg from '../img/games/tic_tac_toe.png'
@@ -14,11 +14,16 @@ import dauphinouImg from '../img/dauphinou.png'
 import lapinouImg from '../img/lapinou.png'
 import tartuffeImg from '../img/tartuffe.png'
 import patapamVictoryImg from '../img/patapam_debout.png'
+import miniPatapamImg from '../img/patapam_collection/mini_patapam.png'
+import patapamExplorateurImg from '../img/patapam_collection/patapam_explorateur.png'
 import betachouNightImg from '../img/patapam_collection/betachou_night.png'
 import reneLePoneyImg from '../img/patapam_collection/rene_le_poney.png'
 
 type GameKey = 'tictactoe' | 'memory' | 'treasure'
 type TicTacToeLevel = 'random' | 'normal' | 'optimized'
+type TreasureMode = 'pvp' | 'ai'
+type TreasureAiLevel = 1 | 2 | 3 | 4
+type TreasureSelectStep = 'mode' | 'pvp-opponent' | 'ai-level'
 type Cell = 'X' | 'O' | null
 type GamePhase = 'select' | 'play'
 interface MemoryCard {
@@ -43,6 +48,11 @@ interface TreasureTile {
   image: string
   revealed: boolean
   collectedBy: 0 | 1 | null
+}
+
+interface CharacterSummary {
+  id: string
+  name_fr: string
 }
 
 const GAME_ZONES: Array<{ key: GameKey; title: string; top: string; image: string }> = [
@@ -89,6 +99,22 @@ const TREASURE_TILE_CONFIG: Array<{ type: TreasureTileType; count: number; image
 ]
 
 const TREASURE_PAIR_TYPES: TreasureTileType[] = ['dauphinou', 'lapinou', 'tartuffe']
+const TREASURE_ROW_SIZES = [10, 10, 10, 10, 9]
+const TREASURE_AI_LEVELS: Array<{ level: TreasureAiLevel; label: string; image: string }> = [
+  { level: 1, label: 'Betachou', image: betachouImg },
+  { level: 2, label: 'Mollasson', image: mollassonImg },
+  { level: 3, label: 'Tartuffe', image: tartuffeImg },
+  { level: 4, label: 'Bobby', image: bobbyImg },
+]
+const PROFILE_CHARACTER_IMAGES: Record<string, string> = {
+  Patapam: miniPatapamImg,
+  Bobby: bobbyImg,
+  Tartuffe: tartuffeImg,
+  Mollasson: mollassonImg,
+  Dauphinou: dauphinouImg,
+  Betachou: betachouImg,
+  Lapinou: lapinouImg,
+}
 
 function shuffleArray<T>(input: T[]) {
   const list = [...input]
@@ -121,14 +147,27 @@ export default function Games() {
   const [isMemoryLocked, setIsMemoryLocked] = useState(false)
   const [memoryWon, setMemoryWon] = useState(false)
   const [treasureTiles, setTreasureTiles] = useState<TreasureTile[]>([])
+  const [treasureSelectStep, setTreasureSelectStep] = useState<TreasureSelectStep>('mode')
+  const [treasureMode, setTreasureMode] = useState<TreasureMode>('pvp')
+  const [accountProfiles, setAccountProfiles] = useState<ChildProfile[]>([])
+  const [accountCharacters, setAccountCharacters] = useState<CharacterSummary[]>([])
+  const [treasurePvpOpponentProfileId, setTreasurePvpOpponentProfileId] = useState<string | null>(null)
+  const [treasureAiLevel, setTreasureAiLevel] = useState<TreasureAiLevel>(1)
   const [currentTreasurePlayer, setCurrentTreasurePlayer] = useState<0 | 1>(0)
   const [isTreasureLocked, setIsTreasureLocked] = useState(false)
+  const [isTreasureAiThinking, setIsTreasureAiThinking] = useState(false)
   const [treasureGameOver, setTreasureGameOver] = useState(false)
   const [treasureWinner, setTreasureWinner] = useState<0 | 1 | null>(null)
   const [treasureMessage, setTreasureMessage] = useState('')
   const aiTimeoutRef = useRef<number | null>(null)
   const memoryTimeoutRef = useRef<number | null>(null)
   const treasureTimeoutRef = useRef<number | null>(null)
+  const treasureAiTimeoutRef = useRef<number | null>(null)
+  const treasureAiSeenCardsRef = useRef<Map<number, TreasureTileType>>(new Map())
+  const treasureAiLastHumanCardRef = useRef<{ index: number; type: TreasureTileType } | null>(null)
+  const treasureAiTurnFlipsRef = useRef(0)
+  const treasureAiFirstFlipTypeRef = useRef<TreasureTileType | null>(null)
+  const treasureAiPriorityTypeRef = useRef<TreasureTileType | null>(null)
 
   const selectedTitle = GAME_ZONES.find((z) => z.key === selectedGame)?.title
 
@@ -183,17 +222,29 @@ export default function Games() {
       window.clearTimeout(treasureTimeoutRef.current)
       treasureTimeoutRef.current = null
     }
+    if (treasureAiTimeoutRef.current !== null) {
+      window.clearTimeout(treasureAiTimeoutRef.current)
+      treasureAiTimeoutRef.current = null
+    }
     setTreasureTiles([])
     setCurrentTreasurePlayer(0)
     setIsTreasureLocked(false)
+    setIsTreasureAiThinking(false)
     setTreasureGameOver(false)
     setTreasureWinner(null)
     setTreasureMessage('')
     setRewardCoins(0)
     setRewardApplied(false)
+    treasureAiSeenCardsRef.current = new Map()
+    treasureAiLastHumanCardRef.current = null
+    treasureAiTurnFlipsRef.current = 0
+    treasureAiFirstFlipTypeRef.current = null
+    treasureAiPriorityTypeRef.current = null
   }
 
-  function startTreasureHunt() {
+  function startTreasureHunt(mode: TreasureMode, aiLevel: TreasureAiLevel = 1) {
+    setTreasureMode(mode)
+    setTreasureAiLevel(aiLevel)
     resetTreasureHunt()
     setGamePhase('play')
 
@@ -210,7 +261,216 @@ export default function Games() {
       }
     }
     setTreasureTiles(shuffleArray(deck))
-    setTreasureMessage('Tour du Joueur 1')
+    setTreasureMessage(`Tour de ${activeProfile?.name ?? 'Joueur 1'}`)
+  }
+
+  function getTreasurePlayerLabel(player: 0 | 1) {
+    if (player === 0) return activeProfile?.name ?? 'Joueur 1'
+    if (treasureMode === 'ai' && player === 1) return `IA Niv ${treasureAiLevel}`
+    if (treasureMode === 'pvp' && player === 1) {
+      return selectedPvpOpponent?.name ?? 'Invite'
+    }
+    return 'Joueur 2'
+  }
+
+  function selectTreasureMode(mode: TreasureMode) {
+    setTreasureMode(mode)
+    setTreasureSelectStep(mode === 'pvp' ? 'pvp-opponent' : 'ai-level')
+  }
+
+  function randomFromList<T>(list: T[]) {
+    if (list.length === 0) return null
+    return list[Math.floor(Math.random() * list.length)]
+  }
+
+  function getHiddenTreasureIndices(tiles: TreasureTile[]) {
+    return tiles
+      .map((tile, index) => ({ tile, index }))
+      .filter(({ tile }) => tile.collectedBy === null && !tile.revealed)
+      .map(({ index }) => index)
+  }
+
+  function getVisibleTreasureIndices(tiles: TreasureTile[]) {
+    return tiles
+      .map((tile, index) => ({ tile, index }))
+      .filter(({ tile }) => tile.collectedBy === null && tile.revealed)
+      .map(({ index }) => index)
+  }
+
+  function getTreasureCoords(index: number) {
+    let offset = 0
+    for (let row = 0; row < TREASURE_ROW_SIZES.length; row += 1) {
+      const size = TREASURE_ROW_SIZES[row]
+      if (index < offset + size) return { row, col: index - offset }
+      offset += size
+    }
+    return { row: -1, col: -1 }
+  }
+
+  function getTreasureIndexFromCoords(row: number, col: number) {
+    if (row < 0 || row >= TREASURE_ROW_SIZES.length) return null
+    if (col < 0 || col >= TREASURE_ROW_SIZES[row]) return null
+
+    let offset = 0
+    for (let r = 0; r < row; r += 1) {
+      offset += TREASURE_ROW_SIZES[r]
+    }
+    return offset + col
+  }
+
+  function getAdjacentTreasureIndices(index: number, tiles: TreasureTile[]) {
+    const { row, col } = getTreasureCoords(index)
+    if (row < 0) return [] as number[]
+
+    const candidateCoords: Array<{ row: number; col: number }> = [
+      { row, col: col - 1 },
+      { row, col: col + 1 },
+      { row: row - 1, col },
+      { row: row + 1, col },
+      { row: row - 1, col: col - 1 },
+      { row: row + 1, col: col - 1 },
+    ]
+
+    return candidateCoords
+      .map(({ row: nextRow, col: nextCol }) => getTreasureIndexFromCoords(nextRow, nextCol))
+      .filter((idx): idx is number => idx !== null)
+      .filter((idx, idxPos, arr) => arr.indexOf(idx) === idxPos)
+      .filter((idx) => {
+        const tile = tiles[idx]
+        return !!tile && tile.collectedBy === null && !tile.revealed
+      })
+  }
+
+  function pickFromSeenMemory(
+    tiles: TreasureTile[],
+    predicate: (type: TreasureTileType) => boolean,
+    excludedIndices: number[] = []
+  ) {
+    const excludedSet = new Set(excludedIndices)
+    const candidates = [...treasureAiSeenCardsRef.current.entries()]
+      .filter(([index, type]) => {
+        if (!predicate(type) || excludedSet.has(index)) return false
+        const tile = tiles[index]
+        return !!tile && tile.collectedBy === null && !tile.revealed
+      })
+      .map(([index]) => index)
+
+    return randomFromList(candidates)
+  }
+
+  function pickLevel3Card(tiles: TreasureTile[]) {
+    const visible = getVisibleTreasureIndices(tiles)
+    const visibleTypes = visible.map((idx) => tiles[idx].type)
+    const byType = new Map<TreasureTileType, number[]>()
+    for (const idx of visible) {
+      const type = tiles[idx].type
+      const list = byType.get(type) ?? []
+      list.push(idx)
+      byType.set(type, list)
+    }
+
+    if (visibleTypes.includes('betachou')) {
+      const knownBetachou = pickFromSeenMemory(tiles, (type) => type === 'betachou', visible)
+      if (knownBetachou !== null) return knownBetachou
+    }
+
+    for (const type of TREASURE_PAIR_TYPES) {
+      const count = (byType.get(type) ?? []).length
+      if (count % 2 === 1) {
+        const match = pickFromSeenMemory(tiles, (t) => t === type, visible)
+        if (match !== null) return match
+      }
+    }
+
+    const bobbyVisible = (byType.get('bobby') ?? []).length
+    if (bobbyVisible % 3 !== 0) {
+      const bobbyPick = pickFromSeenMemory(tiles, (type) => type === 'bobby', visible)
+      if (bobbyPick !== null) return bobbyPick
+    }
+
+    const patapamVisible = (byType.get('patapam') ?? []).length
+    if (patapamVisible % 4 !== 0) {
+      const patapamPick = pickFromSeenMemory(tiles, (type) => type === 'patapam', visible)
+      if (patapamPick !== null) return patapamPick
+    }
+
+    const neutral = pickFromSeenMemory(tiles, (type) => type !== 'rene')
+    if (neutral !== null) return neutral
+
+    return randomFromList(getHiddenTreasureIndices(tiles))
+  }
+
+  function applyLevel3Error(targetIndex: number, tiles: TreasureTile[]) {
+    if (Math.random() >= 0.25) return targetIndex
+    const adjacent = getAdjacentTreasureIndices(targetIndex, tiles)
+    const mistake = randomFromList(adjacent)
+    return mistake ?? targetIndex
+  }
+
+  function chooseTreasureAiFlipIndex(tiles: TreasureTile[]) {
+    const hidden = getHiddenTreasureIndices(tiles)
+    if (hidden.length === 0) return null
+
+    if (treasureAiLevel === 1) {
+      return randomFromList(hidden)
+    }
+
+    if (treasureAiLevel === 2) {
+      if (treasureAiTurnFlipsRef.current === 0 && treasureAiLastHumanCardRef.current) {
+        const remembered = treasureAiLastHumanCardRef.current
+        const tile = tiles[remembered.index]
+        const canStartOnRemembered = !!tile
+          && tile.collectedBy === null
+          && !tile.revealed
+          && remembered.type !== 'rene'
+          && Math.random() < 0.7
+        if (canStartOnRemembered) {
+          return remembered.index
+        }
+      }
+      return randomFromList(hidden)
+    }
+
+    if (treasureAiLevel === 3) {
+      const target = pickLevel3Card(tiles)
+      if (target === null) return null
+      const fromMemory = treasureAiSeenCardsRef.current.has(target)
+      return fromMemory ? applyLevel3Error(target, tiles) : target
+    }
+
+    if (treasureAiTurnFlipsRef.current === 0) {
+      const unseen = hidden.filter((idx) => !treasureAiSeenCardsRef.current.has(idx))
+      return randomFromList(unseen.length > 0 ? unseen : hidden)
+    }
+
+    if (treasureAiPriorityTypeRef.current) {
+      const priorityPick = pickFromSeenMemory(tiles, (type) => type === treasureAiPriorityTypeRef.current)
+      if (priorityPick !== null) return priorityPick
+    }
+
+    return randomFromList(hidden)
+  }
+
+  function shouldTreasureAiCollect(tiles: TreasureTile[]) {
+    const collectable = getTreasureCollectableIndices(tiles)
+    if (collectable.length === 0) return false
+
+    if (treasureAiLevel === 1) {
+      return treasureAiTurnFlipsRef.current >= 3
+    }
+
+    if (treasureAiLevel === 2) {
+      return true
+    }
+
+    if (treasureAiLevel === 3) {
+      if (treasureAiTurnFlipsRef.current === 1 && treasureAiFirstFlipTypeRef.current === 'betachou') {
+        return true
+      }
+      return collectable.length >= 2
+    }
+
+    return true
   }
 
   function chooseGame(gameKey: GameKey) {
@@ -229,6 +489,7 @@ export default function Games() {
     }
     if (gameKey === 'treasure') {
       setGamePhase('select')
+      setTreasureSelectStep('mode')
       resetTreasureHunt()
       resetMemory()
       resetTicTacToe()
@@ -354,7 +615,11 @@ export default function Games() {
       tile.collectedBy === null && tile.revealed ? { ...tile, revealed: false } : tile
     )))
     setCurrentTreasurePlayer(nextPlayer)
-    setTreasureMessage(`Tour du Joueur ${nextPlayer + 1}`)
+    setTreasureMessage(`Tour de ${getTreasurePlayerLabel(nextPlayer)}`)
+    setIsTreasureAiThinking(false)
+    treasureAiTurnFlipsRef.current = 0
+    treasureAiFirstFlipTypeRef.current = null
+    treasureAiPriorityTypeRef.current = null
   }
 
   function handleTreasureBust(reason: 'betachou' | 'rene') {
@@ -373,9 +638,17 @@ export default function Games() {
 
   function handleTreasureCardClick(index: number) {
     if (selectedGame !== 'treasure' || gamePhase !== 'play' || treasureGameOver || isTreasureLocked) return
+    if (treasureMode === 'ai' && currentTreasurePlayer === 1) return
 
     const target = treasureTiles[index]
     if (!target || target.collectedBy !== null || target.revealed) return
+
+    if (treasureMode === 'ai') {
+      treasureAiSeenCardsRef.current.set(index, target.type)
+      if (currentTreasurePlayer === 0) {
+        treasureAiLastHumanCardRef.current = { index, type: target.type }
+      }
+    }
 
     const nextTiles = treasureTiles.map((tile, tileIndex) => (
       tileIndex === index ? { ...tile, revealed: true } : tile
@@ -406,6 +679,51 @@ export default function Games() {
     }
 
     setTreasureMessage('Tu peux continuer ou ramasser.')
+  }
+
+  function revealTreasureCardForAi(index: number) {
+    if (selectedGame !== 'treasure' || gamePhase !== 'play' || treasureGameOver || isTreasureLocked) return
+    if (treasureMode !== 'ai' || currentTreasurePlayer !== 1) return
+
+    const target = treasureTiles[index]
+    if (!target || target.collectedBy !== null || target.revealed) return
+
+    treasureAiSeenCardsRef.current.set(index, target.type)
+    treasureAiTurnFlipsRef.current += 1
+
+    if (treasureAiTurnFlipsRef.current === 1) {
+      treasureAiFirstFlipTypeRef.current = target.type
+      treasureAiPriorityTypeRef.current = target.type
+    }
+
+    const nextTiles = treasureTiles.map((tile, tileIndex) => (
+      tileIndex === index ? { ...tile, revealed: true } : tile
+    ))
+    setTreasureTiles(nextTiles)
+
+    const visibleTypes = nextTiles
+      .filter((tile) => tile.revealed && tile.collectedBy === null)
+      .map((tile) => tile.type)
+
+    if (target.type !== 'betachou' && visibleTypes.includes('betachou')) {
+      handleTreasureBust('betachou')
+      return
+    }
+
+    if (target.type === 'rene') {
+      handleTreasureBust('rene')
+      return
+    }
+
+    if (target.type === 'betachou') {
+      const hasNonBetachou = visibleTypes.some((type) => type !== 'betachou')
+      if (hasNonBetachou) {
+        handleTreasureBust('betachou')
+        return
+      }
+    }
+
+    setTreasureMessage('L\'IA continue ou ramasse.')
   }
 
   function handleTreasureCollect() {
@@ -536,6 +854,27 @@ export default function Games() {
     return 0
   }
 
+  function getTreasureAiReward(level: TreasureAiLevel) {
+    if (level === 1) return 1
+    if (level === 2) return 2
+    if (level === 3) return 4
+    return 8
+  }
+
+  function updateProfileCoinsInDb(profileId: string, currentCoins: number, coinsToAdd: number) {
+    if (coinsToAdd <= 0) return
+
+    void supabase
+      .from('profiles')
+      .update({ coins: currentCoins + coinsToAdd })
+      .eq('id', profileId)
+      .then(({ error }) => {
+        if (error) {
+          console.error('Erreur update coins profile:', error)
+        }
+      })
+  }
+
   const overlayBackgroundStyle = useMemo(() => ({
     background: 'rgba(255, 255, 255, 0.05)',
   }), [])
@@ -546,6 +885,39 @@ export default function Games() {
       : ticTacToeLevel === 'normal'
         ? mollassonImg
         : bobbyImg
+
+  const characterNameById = useMemo(
+    () => Object.fromEntries(accountCharacters.map((character) => [character.id, character.name_fr])),
+    [accountCharacters]
+  )
+
+  const suggestedPvpOpponents = useMemo(
+    () => accountProfiles.filter((profile) => profile.id !== activeProfile?.id),
+    [accountProfiles, activeProfile]
+  )
+
+  const selectedPvpOpponent = useMemo(
+    () => suggestedPvpOpponents.find((profile) => profile.id === treasurePvpOpponentProfileId) ?? null,
+    [suggestedPvpOpponents, treasurePvpOpponentProfileId]
+  )
+
+  const activeProfileAvatar = useMemo(() => {
+    const characterName = characterNameById[activeProfile?.character_id ?? ''] ?? ''
+    return PROFILE_CHARACTER_IMAGES[characterName] ?? miniPatapamImg
+  }, [activeProfile, characterNameById])
+
+  const opponentProfileAvatar = useMemo(() => {
+    if (treasureMode === 'ai') {
+      return TREASURE_AI_LEVELS.find((level) => level.level === treasureAiLevel)?.image ?? bobbyImg
+    }
+
+    if (!selectedPvpOpponent) {
+      return patapamExplorateurImg
+    }
+
+    const characterName = characterNameById[selectedPvpOpponent.character_id ?? ''] ?? ''
+    return PROFILE_CHARACTER_IMAGES[characterName] ?? patapamExplorateurImg
+  }, [treasureMode, treasureAiLevel, selectedPvpOpponent, characterNameById])
 
   const treasureCollectableIndices = useMemo(
     () => getTreasureCollectableIndices(treasureTiles),
@@ -565,11 +937,10 @@ export default function Games() {
   }, [treasureTiles])
 
   const treasureRows = useMemo(() => {
-    const rowSizes = [10, 10, 10, 10, 9]
     const rows: Array<Array<{ tile: TreasureTile; index: number }>> = []
     let start = 0
 
-    for (const size of rowSizes) {
+    for (const size of TREASURE_ROW_SIZES) {
       const rowTiles = treasureTiles.slice(start, start + size).map((tile, idx) => ({
         tile,
         index: start + idx,
@@ -579,6 +950,30 @@ export default function Games() {
     }
     return rows
   }, [treasureTiles])
+
+  useEffect(() => {
+    if (selectedGame !== 'treasure' || gamePhase !== 'select') return
+
+    Promise.all([
+      supabase.from('profiles').select('*'),
+      supabase.from('characters').select('id, name_fr'),
+    ]).then(([{ data: profileData }, { data: characterData }]) => {
+      setAccountProfiles((profileData as ChildProfile[]) ?? [])
+      setAccountCharacters((characterData as CharacterSummary[]) ?? [])
+    })
+  }, [selectedGame, gamePhase])
+
+  useEffect(() => {
+    if (suggestedPvpOpponents.length === 0) {
+      setTreasurePvpOpponentProfileId(null)
+      return
+    }
+
+    const stillValid = suggestedPvpOpponents.some((profile) => profile.id === treasurePvpOpponentProfileId)
+    if (!stillValid) {
+      setTreasurePvpOpponentProfileId(suggestedPvpOpponents[0].id)
+    }
+  }, [suggestedPvpOpponents, treasurePvpOpponentProfileId])
 
   useEffect(() => {
     return () => {
@@ -591,8 +986,58 @@ export default function Games() {
       if (treasureTimeoutRef.current !== null) {
         window.clearTimeout(treasureTimeoutRef.current)
       }
+      if (treasureAiTimeoutRef.current !== null) {
+        window.clearTimeout(treasureAiTimeoutRef.current)
+      }
     }
   }, [])
+
+  useEffect(() => {
+    if (selectedGame !== 'treasure' || gamePhase !== 'play') return
+    if (treasureMode !== 'ai' || currentTreasurePlayer !== 1) return
+    if (treasureGameOver || isTreasureLocked) return
+
+    setIsTreasureAiThinking(true)
+
+    if (treasureAiTimeoutRef.current !== null) {
+      window.clearTimeout(treasureAiTimeoutRef.current)
+      treasureAiTimeoutRef.current = null
+    }
+
+    treasureAiTimeoutRef.current = window.setTimeout(() => {
+      if (shouldTreasureAiCollect(treasureTiles)) {
+        handleTreasureCollect()
+        treasureAiTimeoutRef.current = null
+        return
+      }
+
+      const index = chooseTreasureAiFlipIndex(treasureTiles)
+      if (index === null) {
+        endTreasureTurn(0)
+        treasureAiTimeoutRef.current = null
+        return
+      }
+
+      revealTreasureCardForAi(index)
+      treasureAiTimeoutRef.current = null
+    }, 700)
+
+    return () => {
+      if (treasureAiTimeoutRef.current !== null) {
+        window.clearTimeout(treasureAiTimeoutRef.current)
+        treasureAiTimeoutRef.current = null
+      }
+    }
+  }, [
+    selectedGame,
+    gamePhase,
+    treasureMode,
+    currentTreasurePlayer,
+    treasureGameOver,
+    isTreasureLocked,
+    treasureTiles,
+    treasureAiLevel,
+  ])
 
   useEffect(() => {
     if (selectedGame !== 'tictactoe' || gamePhase !== 'play' || !winner || rewardApplied) return
@@ -612,6 +1057,65 @@ export default function Games() {
     awardCoins(memoryLevel)
     setRewardApplied(true)
   }, [selectedGame, gamePhase, memoryWon, rewardApplied, memoryLevel])
+
+  useEffect(() => {
+    if (selectedGame !== 'treasure' || gamePhase !== 'play' || !treasureGameOver || rewardApplied) return
+
+    if (treasureMode === 'pvp') {
+      if (treasureWinner === null) {
+        setRewardCoins(0)
+        setRewardApplied(true)
+        return
+      }
+
+      const playerOneReward = treasureWinner === 0 ? 5 : 1
+      const playerTwoReward = treasureWinner === 1 ? 5 : 1
+
+      if (activeProfile?.id) {
+        addCoins(playerOneReward)
+        setRewardCoins(playerOneReward)
+        updateProfileCoinsInDb(activeProfile.id, activeProfile.coins ?? 0, playerOneReward)
+      }
+
+      if (selectedPvpOpponent?.id) {
+        updateProfileCoinsInDb(selectedPvpOpponent.id, selectedPvpOpponent.coins ?? 0, playerTwoReward)
+      }
+
+      setAccountProfiles((prev) => prev.map((profile) => {
+        if (activeProfile?.id && profile.id === activeProfile.id) {
+          return { ...profile, coins: (profile.coins ?? 0) + playerOneReward }
+        }
+        if (selectedPvpOpponent?.id && profile.id === selectedPvpOpponent.id) {
+          return { ...profile, coins: (profile.coins ?? 0) + playerTwoReward }
+        }
+        return profile
+      }))
+
+      setRewardApplied(true)
+      return
+    }
+
+    if (treasureWinner !== 0) {
+      setRewardCoins(0)
+      setRewardApplied(true)
+      return
+    }
+
+    const coinsToAdd = getTreasureAiReward(treasureAiLevel)
+    awardCoins(coinsToAdd)
+    setRewardApplied(true)
+  }, [
+    selectedGame,
+    gamePhase,
+    treasureGameOver,
+    rewardApplied,
+    treasureMode,
+    treasureWinner,
+    treasureAiLevel,
+    activeProfile,
+    selectedPvpOpponent,
+    addCoins,
+  ])
 
   useEffect(() => {
     if (selectedGame !== 'treasure' || gamePhase !== 'play' || treasureGameOver || treasureTiles.length === 0) return
@@ -699,6 +1203,7 @@ export default function Games() {
                 resetTicTacToe()
                 resetMemory()
                 resetTreasureHunt()
+                setTreasureSelectStep('mode')
                 setSelectedGame(null)
               }}
               aria-label="Fermer"
@@ -877,15 +1382,22 @@ export default function Games() {
                     style={{ gridTemplateColumns: `repeat(${memoryGridColumns}, minmax(0, 1fr))` }}
                   >
                     {memoryCards.map((card, index) => {
-                      const isOpen = flippedMemoryCards.includes(index) || matchedMemoryCards.includes(index)
+                      const isMatched = matchedMemoryCards.includes(index)
+                      const isOpen = flippedMemoryCards.includes(index) || isMatched
                       return (
                         <button
                           key={card.id}
                           onClick={() => handleMemoryCardClick(index)}
                           disabled={memoryWon || isMemoryLocked || isOpen}
-                          className="aspect-square rounded-xl border-2 border-white/20 bg-white/10 hover:bg-white/20 disabled:cursor-not-allowed transition-colors p-1"
+                          className={`aspect-square rounded-xl border-2 transition-colors p-1 disabled:cursor-not-allowed ${
+                            isMatched
+                              ? 'border-transparent bg-transparent hover:bg-transparent'
+                              : 'border-white/20 bg-white/10 hover:bg-white/20'
+                          }`}
                         >
-                          {isOpen ? (
+                          {isMatched ? (
+                            <div className="w-full h-full" />
+                          ) : isOpen ? (
                             <img src={card.image} alt="Carte memory" className="w-full h-full object-contain rounded-lg" />
                           ) : (
                             <div className="w-full h-full rounded-lg bg-black/35 border border-white/10 flex items-center justify-center text-2xl font-black text-white/80">?</div>
@@ -946,15 +1458,132 @@ export default function Games() {
 
             {selectedGame === 'treasure' && gamePhase === 'select' && (
               <div className="h-[calc(100%-4rem)] flex items-center justify-center">
-                <div className="bg-white/15 border border-white/20 rounded-2xl p-8 flex flex-col items-center gap-5 max-w-xl w-full">
+                <div className="bg-white/15 border border-white/20 rounded-2xl p-8 flex flex-col items-center gap-5 max-w-6xl w-full">
                   <img src={treasureHuntImg} alt="Chasse au Tresor" className="w-36 h-36 object-contain" />
-                  <h2 className="text-3xl font-black text-white">Mode 2 Joueurs</h2>
-                  <button
-                    onClick={startTreasureHunt}
-                    className="bg-white text-slate-900 font-bold px-6 py-3 rounded-xl hover:scale-105 transition-transform"
-                  >
-                    Lancer la partie
-                  </button>
+                  {treasureSelectStep === 'mode' && (
+                    <>
+                      <h2 className="text-3xl font-black text-white">Choisir un type de partie</h2>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-4xl">
+                        <button
+                          onClick={() => selectTreasureMode('pvp')}
+                          className="rounded-2xl bg-white/15 hover:bg-white/25 border border-white/20 p-5 transition-colors flex items-center gap-4"
+                        >
+                          <div className="flex items-center gap-2">
+                            <div className="w-16 h-16 rounded-xl overflow-hidden bg-white/15 border border-white/20">
+                              <img src={miniPatapamImg} alt="Patapam" className="w-full h-full object-contain" />
+                            </div>
+                            <div className="w-16 h-16 rounded-xl overflow-hidden bg-white/15 border border-white/20">
+                              <img src={bobbyImg} alt="Bobby" className="w-full h-full object-contain" />
+                            </div>
+                          </div>
+                          <div className="text-3xl font-black text-white">Joueur vs Joueur</div>
+                        </button>
+
+                        <button
+                          onClick={() => selectTreasureMode('ai')}
+                          className="rounded-2xl bg-white/15 hover:bg-white/25 border border-white/20 p-5 transition-colors flex items-center gap-4"
+                        >
+                          <div className="w-16 h-16 rounded-xl bg-white/15 border border-white/20 flex items-center justify-center">
+                            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white" aria-hidden="true">
+                              <rect x="3" y="11" width="18" height="10" rx="2" />
+                              <circle cx="12" cy="5" r="2" />
+                              <path d="M12 7v4" />
+                              <circle cx="8" cy="16" r="1" />
+                              <circle cx="16" cy="16" r="1" />
+                            </svg>
+                          </div>
+                          <div className="text-3xl font-black text-white">Joueur vs IA</div>
+                        </button>
+                      </div>
+                    </>
+                  )}
+
+                  {treasureSelectStep === 'pvp-opponent' && (
+                    <>
+                      <h2 className="text-3xl font-black text-white">Choisir l'adversaire</h2>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 w-full max-w-5xl">
+                        {suggestedPvpOpponents.map((profile) => {
+                          const characterName = characterNameById[profile.character_id ?? ''] ?? ''
+                          const avatar = PROFILE_CHARACTER_IMAGES[characterName] ?? miniPatapamImg
+                          const isSelected = treasurePvpOpponentProfileId === profile.id
+
+                          return (
+                            <button
+                              key={profile.id}
+                              onClick={() => setTreasurePvpOpponentProfileId(profile.id)}
+                              className={`rounded-2xl border p-3 transition-colors flex flex-col items-center gap-2 ${
+                                isSelected
+                                  ? 'bg-white/30 border-white/60'
+                                  : 'bg-white/15 hover:bg-white/25 border-white/20'
+                              }`}
+                            >
+                              <div className="w-20 h-20 rounded-xl overflow-hidden bg-white/15 border border-white/20">
+                                <img src={avatar} alt={profile.name} className="w-full h-full object-contain" />
+                              </div>
+                              <div className="text-white font-bold text-base">{profile.name}</div>
+                            </button>
+                          )
+                        })}
+
+                        <button
+                          onClick={() => setTreasurePvpOpponentProfileId(null)}
+                          className={`rounded-2xl border p-3 transition-colors flex flex-col items-center gap-2 ${
+                            treasurePvpOpponentProfileId === null
+                              ? 'bg-white/30 border-white/60'
+                              : 'bg-white/15 hover:bg-white/25 border-white/20'
+                          }`}
+                        >
+                          <div className="w-20 h-20 rounded-xl overflow-hidden bg-white/15 border border-white/20">
+                            <img src={patapamExplorateurImg} alt="Invite" className="w-full h-full object-contain" />
+                          </div>
+                          <div className="text-white font-bold text-base">Invite</div>
+                        </button>
+                      </div>
+                      {suggestedPvpOpponents.length === 0 && (
+                        <div className="text-white/85 text-sm">Aucun autre profil trouve. Choisis Invite pour jouer en duel.</div>
+                      )}
+                      <div className="flex items-center gap-3 mt-2">
+                        <button
+                          onClick={() => setTreasureSelectStep('mode')}
+                          className="bg-black/25 border border-white/20 text-white font-semibold px-4 py-2 rounded-xl hover:bg-black/40 transition-colors"
+                        >
+                          Retour
+                        </button>
+                        <button
+                          onClick={() => startTreasureHunt('pvp', treasureAiLevel)}
+                          className="bg-white text-slate-900 font-bold px-6 py-2 rounded-xl hover:scale-105 transition-transform"
+                        >
+                          Lancer la partie
+                        </button>
+                      </div>
+                    </>
+                  )}
+
+                  {treasureSelectStep === 'ai-level' && (
+                    <>
+                      <h2 className="text-3xl font-black text-white">Choisir le niveau IA</h2>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full max-w-4xl">
+                        {TREASURE_AI_LEVELS.map((lvl) => (
+                          <button
+                            key={lvl.level}
+                            onClick={() => startTreasureHunt('ai', lvl.level)}
+                            className="rounded-2xl bg-white/15 hover:bg-white/25 border border-white/20 p-4 text-left transition-colors flex items-center gap-3"
+                          >
+                            <div className="w-24 h-24 shrink-0 rounded-xl overflow-hidden bg-white/15 border border-white/20 shadow-lg">
+                              <img src={lvl.image} alt={`Niveau ${lvl.level}`} className="w-full h-full object-contain" />
+                            </div>
+                            <div className="text-2xl font-black text-white">Niveau {lvl.level}: {lvl.label}</div>
+                          </button>
+                        ))}
+                      </div>
+                      <button
+                        onClick={() => setTreasureSelectStep('mode')}
+                        className="bg-black/25 border border-white/20 text-white font-semibold px-4 py-2 rounded-xl hover:bg-black/40 transition-colors mt-2"
+                      >
+                        Retour
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
             )}
@@ -964,10 +1593,19 @@ export default function Games() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-1.5 items-stretch">
                   <div className="bg-white/12 border border-white/20 rounded-xl p-1.5 flex items-center justify-between gap-2">
                     <div className="flex flex-col gap-0.5">
-                      <div className="text-[11px] text-white/80">Joueur 1</div>
                       <div className="text-lg font-black text-white leading-none">{treasureCollectedCounts[0]} cartes</div>
                       <div className="text-[11px] text-white/70">Betachou: {treasureBetachouCounts[0]}</div>
                     </div>
+
+                    <div className="flex flex-col items-center gap-1 min-w-0 px-1">
+                      <div className="text-base md:text-lg font-black text-white text-center leading-none truncate max-w-[130px]">
+                        {getTreasurePlayerLabel(0)}
+                      </div>
+                      <div className="w-11 h-11 rounded-full overflow-hidden bg-white/15 border border-white/20 shrink-0">
+                        <img src={activeProfileAvatar} alt={getTreasurePlayerLabel(0)} className="w-full h-full object-contain" />
+                      </div>
+                    </div>
+
                     <div className="relative w-11 h-14 shrink-0">
                       <div className="absolute inset-0 rounded-md border border-white/20 bg-black/25 overflow-hidden">
                         <img src={treasureCardBackImg} alt="Dos de carte" className="w-full h-full object-cover" />
@@ -984,28 +1622,45 @@ export default function Games() {
                   <div className="bg-white/12 border border-white/20 rounded-xl p-1.5 flex flex-col items-center justify-center gap-0.5">
                     <button
                       onClick={handleTreasureCollect}
-                      disabled={treasureCollectableIndices.length === 0 || isTreasureLocked || treasureGameOver}
+                      disabled={
+                        treasureCollectableIndices.length === 0
+                        || isTreasureLocked
+                        || treasureGameOver
+                        || (treasureMode === 'ai' && currentTreasurePlayer === 1)
+                      }
                       className="bg-white text-slate-900 text-[11px] font-bold px-3.5 py-1 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Ramasser
                     </button>
                     <div className="text-xs text-white/85 text-center min-h-4">{treasureMessage}</div>
                     {!treasureGameOver && (
-                      <div className="text-[11px] text-white/75">Tour actif: Joueur {currentTreasurePlayer + 1}</div>
+                      <div className="text-[11px] text-white/75">
+                        Tour actif: {getTreasurePlayerLabel(currentTreasurePlayer)}
+                        {treasureMode === 'ai' && currentTreasurePlayer === 1 && isTreasureAiThinking && ' (reflexion...)'}
+                      </div>
                     )}
                     {treasureGameOver && (
                       <div className="text-xs font-bold text-white">
-                        {treasureWinner === null ? 'Egalite' : `Victoire Joueur ${treasureWinner + 1}`}
+                        {treasureWinner === null ? 'Egalite' : `Victoire ${getTreasurePlayerLabel(treasureWinner)}`}
                       </div>
                     )}
                   </div>
 
-                  <div className="bg-white/12 border border-white/20 rounded-xl p-1.5 flex items-center justify-between gap-2 md:flex-row-reverse">
-                    <div className="flex flex-col gap-0.5 md:items-end">
-                      <div className="text-[11px] text-white/80">Joueur 2</div>
+                  <div className="bg-white/12 border border-white/20 rounded-xl p-1.5 flex items-center justify-between gap-2">
+                    <div className="flex flex-col gap-0.5 text-right">
                       <div className="text-lg font-black text-white leading-none">{treasureCollectedCounts[1]} cartes</div>
                       <div className="text-[11px] text-white/70">Betachou: {treasureBetachouCounts[1]}</div>
                     </div>
+
+                    <div className="flex flex-col items-center gap-1 min-w-0 px-1">
+                      <div className="text-base md:text-lg font-black text-white text-center leading-none truncate max-w-[130px]">
+                        {getTreasurePlayerLabel(1)}
+                      </div>
+                      <div className="w-11 h-11 rounded-full overflow-hidden bg-white/15 border border-white/20 shrink-0">
+                        <img src={opponentProfileAvatar} alt={getTreasurePlayerLabel(1)} className="w-full h-full object-contain" />
+                      </div>
+                    </div>
+
                     <div className="relative w-11 h-14 shrink-0">
                       <div className="absolute inset-0 rounded-md border border-white/20 bg-black/25 overflow-hidden">
                         <img src={treasureCardBackImg} alt="Dos de carte" className="w-full h-full object-cover" />
@@ -1029,25 +1684,28 @@ export default function Games() {
                       {row.map(({ tile, index }) => {
                         const isHidden = !tile.revealed && tile.collectedBy === null
                         const isCollected = tile.collectedBy !== null
+                        const isAiTurn = treasureMode === 'ai' && currentTreasurePlayer === 1
                         return (
                           <button
                             key={tile.id}
-                            onClick={() => handleTreasureCardClick(index)}
-                            disabled={isTreasureLocked || treasureGameOver || tile.revealed || isCollected}
+                            onClick={() => {
+                              if (isAiTurn) return
+                              handleTreasureCardClick(index)
+                            }}
+                            disabled={isTreasureLocked || treasureGameOver || tile.revealed || isCollected || isAiTurn}
                             className={`aspect-square rounded-lg border transition-colors p-0.5 ${
                               isCollected
-                                ? tile.collectedBy === 0
-                                  ? 'border-blue-300/70 bg-blue-500/20'
-                                  : 'border-rose-300/70 bg-rose-500/20'
+                                ? 'border-transparent bg-transparent hover:bg-transparent'
                                 : 'border-white/20 bg-white/10 hover:bg-white/20'
                             }`}
                           >
-                            {isHidden && (
+                            {isCollected && <div className="w-full h-full" />}
+                            {isHidden && !isCollected && (
                               <div className="w-full h-full rounded-md border border-white/10 overflow-hidden">
                                 <img src={treasureCardBackImg} alt="Dos de carte" className="w-full h-full object-cover" />
                               </div>
                             )}
-                            {!isHidden && (
+                            {!isHidden && !isCollected && (
                               <div className="relative w-full h-full rounded-lg overflow-hidden">
                                 <img src={tile.image} alt={tile.type} className="w-full h-full object-contain" />
                               </div>
