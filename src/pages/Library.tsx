@@ -3,12 +3,13 @@ import { useNavigate } from 'react-router-dom'
 import { useProfileStore } from '../store/profileStore'
 import { supabase } from '../lib/supabase'
 import patapamImg from '../img/patapam_debout.png'
-import clairiereImg from '../img/patapam_clairiere.png'
+import libraryImg from '../img/pages/patapam_library.png'
 import dauphinou from '../img/dauphinou.png'
 import mollasson from '../img/mollasson.png'
 import bobby from '../img/bobby.png'
 import tartuffe from '../img/tartuffe.png'
 import betachou from '../img/betachou.png'
+import CartonsOverlay from '../components/library/CartonsOverlay'
 
 const characterImages: Record<string, string> = {
   Patapam: patapamImg,
@@ -19,26 +20,11 @@ const characterImages: Record<string, string> = {
   Betachou: betachou,
 }
 
-interface Zone {
-  id: string
-  label: string
-  emoji: string
-  route: string
-  color: string
-  unlocked: boolean
-}
-
-const ZONES: Zone[] = [
-  { id: 'dauphinou', label: 'Côte de Dauphinou', emoji: '🌊', route: '/zone/dauphinou', color: 'bg-patapam-blue',   unlocked: true  },
-  { id: 'tartuffe',  label: 'Montagne de Tartuffe', emoji: '⛰️',  route: '/zone/tartuffe',  color: 'bg-patapam-purple', unlocked: false },
-  { id: 'mollasson', label: 'Forêt de Mollasson', emoji: '🌿', route: '/zone/mollasson', color: 'bg-patapam-green',  unlocked: false },
-  { id: 'bobby',     label: 'Village de Bobby',   emoji: '🏘️', route: '/zone/bobby',     color: 'bg-patapam-yellow', unlocked: false },
-]
-
-export default function Clearing() {
+export default function Library() {
   const navigate = useNavigate()
   const profile = useProfileStore((s) => s.activeProfile)
   const [charName, setCharName] = useState<string | null>(null)
+  const [cartonsOpen, setCartonsOpen] = useState(false)
 
   useEffect(() => {
     if (!profile?.character_id) return
@@ -53,10 +39,8 @@ export default function Clearing() {
   const avatarImg = charName ? characterImages[charName] : null
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden bg-patapam-green">
-      {/* Header */}
+    <div className="flex flex-col h-screen overflow-hidden bg-patapam-blue">
       <header className="flex items-center justify-between px-4 py-3 bg-black/20">
-        {/* Gauche : avatar + nom */}
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-white/30 overflow-hidden flex items-center justify-center text-xl">
             {avatarImg
@@ -67,15 +51,14 @@ export default function Clearing() {
           <span className="text-white font-bold text-lg">{profile?.name}</span>
         </div>
 
-        {/* Centre : navigation */}
         <div className="flex items-center gap-1">
           <button onClick={() => navigate('/cabin')} className="flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl text-white/70 hover:text-white hover:bg-white/10 transition-colors">
             <span className="text-xl">🏠</span>
             <span className="text-xs">Cabane</span>
           </button>
-          <button className="flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl text-white bg-white/20">
+          <button onClick={() => navigate('/')} className="flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl text-white/70 hover:text-white hover:bg-white/10 transition-colors">
             <span className="text-xl">🌳</span>
-            <span className="text-xs font-bold">Clairière</span>
+            <span className="text-xs">Clairière</span>
           </button>
           <button onClick={() => navigate('/collection')} className="flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl text-white/70 hover:text-white hover:bg-white/10 transition-colors">
             <span className="text-xl">📚</span>
@@ -83,56 +66,34 @@ export default function Clearing() {
           </button>
         </div>
 
-        {/* Droite : pièces */}
         <div className="flex items-center gap-1 bg-white/20 rounded-full px-4 py-1">
           <span className="text-yellow-300 text-lg">🪙</span>
           <span className="text-white font-bold">{profile?.coins ?? 0}</span>
         </div>
       </header>
 
-      {/* Clairière — image plein écran */}
       <div className="flex-1 min-h-0 flex items-center justify-center bg-black">
-        <div className="relative" style={{ aspectRatio: '1264/843', height: '100%', maxHeight: '100%', maxWidth: '100%' }}>
+        <div className="relative" style={{ aspectRatio: '1671/940', height: '100%', maxHeight: '100%', maxWidth: '100%' }}>
           <img
-            src={clairiereImg}
-            alt="La Clairière de Patapam"
+            src={libraryImg}
+            alt="La Bibliothèque de Patapam"
             className="absolute inset-0 w-full h-full object-fill"
           />
 
-          {/* Zones cliquables */}
-          {/* Jeux — centre */}
+          {/* Cartons — quart inférieur droit (à ajuster) */}
           <button
-            onClick={() => navigate('/games')}
-            style={{ position: 'absolute', top: '40%', left: '30%', width: '40%', height: '26%' }}
+            onClick={() => setCartonsOpen(true)}
+            style={{ position: 'absolute', top: '50%', left: '50%', width: '50%', height: '48%' }}
             className="group flex items-center justify-center border-2 border-transparent hover:border-white/60 hover:bg-white/20 transition-all duration-200 rounded-lg"
           >
             <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-white font-bold text-sm drop-shadow-lg bg-black/40 px-2 py-1 rounded-lg">
-              🎮 Les Jeux
-            </span>
-          </button>
-          {/* Bibliothèque — tiers central, premier tiers en hauteur (à ajuster) */}
-          <button
-            onClick={() => navigate('/library')}
-            style={{ position: 'absolute', top: '0%', left: '33%', width: '37%', height: '40%' }}
-            className="group flex items-center justify-center border-2 border-transparent hover:border-white/60 hover:bg-white/20 transition-all duration-200 rounded-lg"
-          >
-            <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-white font-bold text-sm drop-shadow-lg bg-black/40 px-2 py-1 rounded-lg">
-              📚 Bibliothèque
-            </span>
-          </button>
-          {/* Cabane — haut droite (à ajuster) */}
-          <button
-            onClick={() => navigate('/cabin')}
-            style={{ position: 'absolute', top: '0%', left: '70%', width: '30%', height: '50%' }}
-            className="group flex items-center justify-center border-2 border-transparent hover:border-white/60 hover:bg-white/20 transition-all duration-200 rounded-lg"
-          >
-            <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-white font-bold text-sm drop-shadow-lg bg-black/40 px-2 py-1 rounded-lg">
-              🏠 La Cabane
+              📦 Cartons
             </span>
           </button>
         </div>
       </div>
+
+      <CartonsOverlay open={cartonsOpen} onClose={() => setCartonsOpen(false)} />
     </div>
   )
 }
-
