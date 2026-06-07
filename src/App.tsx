@@ -14,6 +14,7 @@ import ZoneBobby from './pages/zones/ZoneBobby'
 import Cabin from './pages/Cabin'
 import Games from './pages/Games'
 import Collection from './pages/Collection'
+import Library from './pages/Library'
 import ParentDashboard from './pages/ParentDashboard'
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
@@ -74,6 +75,9 @@ export default function App() {
         } />
         <Route path="/collection" element={
           <RequireAuth><RequireProfile><Collection /></RequireProfile></RequireAuth>
+        } />
+        <Route path="/library" element={
+          <RequireAuth><RequireProfile><Library /></RequireProfile></RequireAuth>
         } />
         <Route path="/games" element={
           <RequireAuth><RequireProfile><Games /></RequireProfile></RequireAuth>

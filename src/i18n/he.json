@@ -38,5 +38,25 @@
     "continue": "המשך",
     "play": "שחק",
     "locked": "נעול"
+  },
+  "library": {
+    "cartons": {
+      "title": "קלפים",
+      "ageLabel": "גיל:",
+      "ageYoung": "0–18 חודשים",
+      "ageOlder": "18 חודשים +",
+      "learn": "ללמוד",
+      "find": "לחפש",
+      "stop": "← עצור",
+      "back": "← חזרה",
+      "domanInfo": "מידע על שיטת גלן דומן",
+      "categories": {
+        "famille": "משפחה",
+        "corps": "גוף",
+        "animaux": "חיות",
+        "jouets": "צעצועים",
+        "nourriture": "אוכל"
+      }
+    }
   }
 }

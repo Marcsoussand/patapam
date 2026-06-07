@@ -39,5 +39,25 @@
     "continue": "Continue",
     "play": "Play",
     "locked": "Locked"
+  },
+  "library": {
+    "cartons": {
+      "title": "Cards",
+      "ageLabel": "Age:",
+      "ageYoung": "0–18 months",
+      "ageOlder": "18 months +",
+      "learn": "Learn",
+      "find": "Find",
+      "stop": "← Stop",
+      "back": "← Back",
+      "domanInfo": "Learn about the Glenn Doman method",
+      "categories": {
+        "famille": "Family",
+        "corps": "Body",
+        "animaux": "Animals",
+        "jouets": "Toys",
+        "nourriture": "Food"
+      }
+    }
   }
 }
