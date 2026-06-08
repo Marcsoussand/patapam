@@ -50,6 +50,7 @@ export default function Cabin() {
   const [layout, setLayout] = useState<CabinLayout>({ floor1: [], floor2: [] })
   const [loading, setLoading] = useState(true)
   const [isDropOver, setIsDropOver] = useState(false)
+  const [selectedPlacedId, setSelectedPlacedId] = useState<string | null>(null)
   const sceneRef = useRef<HTMLDivElement>(null)
 
   const catalogMap = catalogById(catalog)
@@ -91,25 +92,46 @@ export default function Cabin() {
     }
   }, [profile?.id, reloadCabinData])
 
+  useEffect(() => {
+    setSelectedPlacedId(null)
+  }, [floor])
+
   const bagItems = buildBagItems(inventory, catalogMap, layout)
   void bagVersion
 
   const placedOnFloor = layout[floorKey(floor)]
 
   async function persistLayout(next: CabinLayout) {
-    if (!profile) return
+    if (!profile) return false
+    const previous = layout
     setLayout(next)
     const ok = await saveCabinLayout(profile.id, next)
     if (ok) {
       setActiveProfile({ ...profile, cabin_layout: next as unknown as Record<string, unknown> })
       setBagVersion((v) => v + 1)
+      return true
     }
+    setLayout(previous)
+    return false
   }
 
   function handleSceneDragOver(e: DragEvent<HTMLDivElement>) {
     e.preventDefault()
-    e.dataTransfer.dropEffect = 'copy'
+    const allowed = e.dataTransfer.effectAllowed
+    e.dataTransfer.dropEffect = allowed === 'move' ? 'move' : 'copy'
     setIsDropOver(true)
+  }
+
+  function parseDragPayload(raw: string): {
+    source?: string
+    itemId?: string
+    placedId?: string
+  } | null {
+    try {
+      return JSON.parse(raw) as { source?: string; itemId?: string; placedId?: string }
+    } catch {
+      return null
+    }
   }
 
   function handleSceneDrop(e: DragEvent<HTMLDivElement>) {
@@ -118,12 +140,29 @@ export default function Cabin() {
     const container = sceneRef.current
     if (!container || !profile) return
 
-    let payload: { source?: string; itemId?: string }
-    try {
-      payload = JSON.parse(e.dataTransfer.getData('text/plain'))
-    } catch {
+    const payload = parseDragPayload(e.dataTransfer.getData('text/plain'))
+    if (!payload) return
+
+    const coords = cabinSceneCoords(e, container)
+    if (!coords) return
+
+    const key = floorKey(floor)
+
+    if (payload.source === 'cabin-placed' && payload.placedId) {
+      const exists = layout[key].some((p) => p.id === payload.placedId)
+      if (!exists) return
+
+      const next: CabinLayout = {
+        ...layout,
+        [key]: layout[key].map((p) =>
+          p.id === payload.placedId ? { ...p, x: coords.x, y: coords.y } : p,
+        ),
+      }
+      void persistLayout(next)
+      setSelectedPlacedId(payload.placedId)
       return
     }
+
     if (payload.source !== 'cabin-bag' || !payload.itemId) return
 
     const cat = catalogMap.get(payload.itemId)
@@ -132,10 +171,6 @@ export default function Cabin() {
     const bag = buildBagItems(inventory, catalogMap, layout)
     if (!bag.some((b) => b.itemId === payload.itemId)) return
 
-    const coords = cabinSceneCoords(e, container)
-    if (!coords) return
-
-    const key = floorKey(floor)
     const next: CabinLayout = {
       ...layout,
       [key]: [
@@ -149,6 +184,19 @@ export default function Cabin() {
       ],
     }
     void persistLayout(next)
+    setSelectedPlacedId(null)
+  }
+
+  function handleReturnPlacedToBag(placedId: string) {
+    const key = floorKey(floor)
+    if (!layout[key].some((p) => p.id === placedId)) return
+
+    const next: CabinLayout = {
+      ...layout,
+      [key]: layout[key].filter((p) => p.id !== placedId),
+    }
+    void persistLayout(next)
+    setSelectedPlacedId(null)
   }
 
   const avatarImg = charName ? characterImages[charName] : null
@@ -202,6 +250,7 @@ export default function Cabin() {
             ref={sceneRef}
             className={`relative h-full max-h-full w-full max-w-full ${isDropOver ? 'ring-4 ring-amber-300/60 ring-inset' : ''}`}
             style={{ aspectRatio: '1424/752', height: '100%' }}
+            onClick={() => setSelectedPlacedId(null)}
             onDragOver={handleSceneDragOver}
             onDragLeave={() => setIsDropOver(false)}
             onDrop={handleSceneDrop}
@@ -216,7 +265,16 @@ export default function Cabin() {
             {placedOnFloor.map((placed) => {
               const cat = catalogMap.get(placed.itemId)
               if (!cat) return null
-              return <CabinPlacedSprite key={placed.id} placed={placed} catalog={cat} />
+              return (
+                <CabinPlacedSprite
+                  key={placed.id}
+                  placed={placed}
+                  catalog={cat}
+                  selected={selectedPlacedId === placed.id}
+                  disabled={loading}
+                  onSelect={() => setSelectedPlacedId(placed.id)}
+                />
+              )
             })}
 
             {floor === 1 && (
@@ -233,11 +291,30 @@ export default function Cabin() {
                 label="⬇️ Redescendre"
               />
             )}
+
+            {selectedPlacedId && (
+              <div className="absolute bottom-3 left-1/2 z-40 -translate-x-1/2 flex gap-2">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleReturnPlacedToBag(selectedPlacedId)
+                  }}
+                  className="rounded-xl bg-black/70 px-4 py-2 text-sm font-semibold text-white shadow-lg ring-2 ring-amber-300/80 hover:bg-black/85 transition-colors"
+                >
+                  🎒 Ranger dans le sac
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>
 
-      <CabinInventoryBar items={bagItems} disabled={loading} />
+      <CabinInventoryBar
+        items={bagItems}
+        disabled={loading}
+        onReturnPlaced={handleReturnPlacedToBag}
+      />
     </div>
   )
 }

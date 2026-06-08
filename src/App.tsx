@@ -16,6 +16,10 @@ import Games from './pages/Games'
 import Collection from './pages/Collection'
 import Library from './pages/Library'
 import Beach from './pages/Beach'
+import Education from './pages/Education'
+import FlagsGame from './pages/education/FlagsGame'
+import MathMap from './pages/education/MathMap'
+import MathLevel from './pages/education/MathLevel'
 import ParentDashboard from './pages/ParentDashboard'
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
@@ -85,6 +89,18 @@ export default function App() {
         } />
         <Route path="/games" element={
           <RequireAuth><RequireProfile><Games /></RequireProfile></RequireAuth>
+        } />
+        <Route path="/education" element={
+          <RequireAuth><RequireProfile><Education /></RequireProfile></RequireAuth>
+        } />
+        <Route path="/education/math" element={
+          <RequireAuth><RequireProfile><MathMap /></RequireProfile></RequireAuth>
+        } />
+        <Route path="/education/math/:levelNum" element={
+          <RequireAuth><RequireProfile><MathLevel /></RequireProfile></RequireAuth>
+        } />
+        <Route path="/education/flags" element={
+          <RequireAuth><RequireProfile><FlagsGame /></RequireProfile></RequireAuth>
         } />
         <Route path="/parent" element={
           <RequireAuth><ParentDashboard /></RequireAuth>

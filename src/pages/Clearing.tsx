@@ -146,6 +146,11 @@ export default function Clearing() {
 
           {/* Zones cliquables */}
           <ClearingPanel
+            onClick={() => navigate('/education')}
+            style={{ position: 'absolute', top: '0%', left: '0%', width: '33.33%', height: '33.33%' }}
+            label="🎓 Éducation"
+          />
+          <ClearingPanel
             onClick={() => navigate('/beach')}
             style={{ position: 'absolute', top: '66.66%', left: '0%', width: '33.33%', height: '33.34%' }}
             label="🏖️ Plage"

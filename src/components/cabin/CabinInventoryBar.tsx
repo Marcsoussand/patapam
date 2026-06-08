@@ -1,24 +1,60 @@
-import type { DragEvent } from 'react'
+import { useState, type DragEvent } from 'react'
 import { cabinItemPublicUrl } from '../../lib/cabinStorage'
 import type { CabinBagItem } from '../../types/cabin'
 
 interface CabinInventoryBarProps {
   items: CabinBagItem[]
   disabled?: boolean
+  onReturnPlaced?: (placedId: string) => void
 }
 
-export default function CabinInventoryBar({ items, disabled }: CabinInventoryBarProps) {
+function parseDragPayload(raw: string): { source?: string; placedId?: string; itemId?: string } | null {
+  try {
+    return JSON.parse(raw) as { source?: string; placedId?: string; itemId?: string }
+  } catch {
+    return null
+  }
+}
+
+export default function CabinInventoryBar({ items, disabled, onReturnPlaced }: CabinInventoryBarProps) {
+  const [isDropOver, setIsDropOver] = useState(false)
+
   function handleDragStart(e: DragEvent<HTMLDivElement>, itemId: string) {
     if (disabled) {
       e.preventDefault()
       return
     }
-    e.dataTransfer.effectAllowed = 'copy'
+    e.dataTransfer.effectAllowed = 'copyMove'
     e.dataTransfer.setData('text/plain', JSON.stringify({ source: 'cabin-bag', itemId }))
   }
 
+  function handleDragOver(e: DragEvent<HTMLDivElement>) {
+    if (disabled || !onReturnPlaced) return
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    setIsDropOver(true)
+  }
+
+  function handleDrop(e: DragEvent<HTMLDivElement>) {
+    e.preventDefault()
+    setIsDropOver(false)
+    if (disabled || !onReturnPlaced) return
+
+    const payload = parseDragPayload(e.dataTransfer.getData('text/plain'))
+    if (payload?.source === 'cabin-placed' && payload.placedId) {
+      onReturnPlaced(payload.placedId)
+    }
+  }
+
   return (
-    <div className="shrink-0 border-t border-white/20 bg-black/40 px-3 py-2">
+    <div
+      className={`shrink-0 border-t px-3 py-2 transition-colors ${
+        isDropOver ? 'border-amber-300 bg-amber-900/50' : 'border-white/20 bg-black/40'
+      }`}
+      onDragOver={handleDragOver}
+      onDragLeave={() => setIsDropOver(false)}
+      onDrop={handleDrop}
+    >
       <div className="flex items-center gap-2 mb-2">
         <span className="text-lg" aria-hidden>
           🎒
@@ -26,7 +62,11 @@ export default function CabinInventoryBar({ items, disabled }: CabinInventoryBar
         <span className="text-white font-semibold text-sm">Sac d&apos;objets</span>
       </div>
       {items.length === 0 ? (
-        <p className="text-white/60 text-sm px-1">Aucun objet disponible — glisse un objet gagné ici plus tard.</p>
+        <p className="text-white/60 text-sm px-1">
+          {isDropOver
+            ? 'Relâche pour ranger l’objet dans le sac.'
+            : 'Sac vide — glisse un objet posé ici pour le ranger.'}
+        </p>
       ) : (
         <div className="flex gap-2 overflow-x-auto pb-1">
           {items.map((bag) => (
