@@ -107,6 +107,150 @@ export type Database = {
         }
         Relationships: []
       }
+      cabin_items: {
+        Row: {
+          created_at: string | null
+          floors: number[]
+          height_pct: number
+          id: string
+          is_active: boolean
+          name_en: string
+          name_fr: string
+          name_he: string
+          sort_order: number
+          storage_path: string
+          width_pct: number
+        }
+        Insert: {
+          created_at?: string | null
+          floors?: number[]
+          height_pct?: number
+          id: string
+          is_active?: boolean
+          name_en: string
+          name_fr: string
+          name_he: string
+          sort_order?: number
+          storage_path: string
+          width_pct?: number
+        }
+        Update: {
+          created_at?: string | null
+          floors?: number[]
+          height_pct?: number
+          id?: string
+          is_active?: boolean
+          name_en?: string
+          name_fr?: string
+          name_he?: string
+          sort_order?: number
+          storage_path?: string
+          width_pct?: number
+        }
+        Relationships: []
+      }
+      flag_countries: {
+        Row: {
+          audio_path_en: string | null
+          audio_path_fr: string | null
+          audio_path_he: string | null
+          created_at: string | null
+          id: string
+          is_active: boolean
+          name_en: string
+          name_fr: string
+          name_he: string
+          storage_path: string
+        }
+        Insert: {
+          audio_path_en?: string | null
+          audio_path_fr?: string | null
+          audio_path_he?: string | null
+          created_at?: string | null
+          id: string
+          is_active?: boolean
+          name_en: string
+          name_fr: string
+          name_he: string
+          storage_path: string
+        }
+        Update: {
+          audio_path_en?: string | null
+          audio_path_fr?: string | null
+          audio_path_he?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean
+          name_en?: string
+          name_fr?: string
+          name_he?: string
+          storage_path?: string
+        }
+        Relationships: []
+      }
+      flag_panel_countries: {
+        Row: {
+          country_id: string
+          panel_id: string
+          sort_order: number
+        }
+        Insert: {
+          country_id: string
+          panel_id: string
+          sort_order?: number
+        }
+        Update: {
+          country_id?: string
+          panel_id?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flag_panel_countries_country_id_fkey"
+            columns: ["country_id"]
+            isOneToOne: false
+            referencedRelation: "flag_countries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flag_panel_countries_panel_id_fkey"
+            columns: ["panel_id"]
+            isOneToOne: false
+            referencedRelation: "flag_panels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      flag_panels: {
+        Row: {
+          choice_count: number
+          created_at: string | null
+          id: string
+          is_active: boolean
+          name_en: string
+          name_fr: string
+          name_he: string
+        }
+        Insert: {
+          choice_count?: number
+          created_at?: string | null
+          id: string
+          is_active?: boolean
+          name_en: string
+          name_fr: string
+          name_he: string
+        }
+        Update: {
+          choice_count?: number
+          created_at?: string | null
+          id?: string
+          is_active?: boolean
+          name_en?: string
+          name_fr?: string
+          name_he?: string
+        }
+        Relationships: []
+      }
       inventory: {
         Row: {
           acquired_at: string | null

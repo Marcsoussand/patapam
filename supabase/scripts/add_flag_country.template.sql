@@ -1,0 +1,22 @@
+-- ============================================================
+-- Ajouter UN pays au jeu des drapeaux
+-- ============================================================
+--
+-- 1. Storage → bucket education-flags → {code}.svg (racine du bucket)
+-- 2. INSERT flag_countries + flag_panel_countries
+--
+-- Source PNG/SVG : https://github.com/lipis/flag-icons (MIT)
+--   npm install flag-icons --save-dev
+--   copier node_modules/flag-icons/flags/4x3/xx.svg → exporter en flags/xx.png
+
+-- INSERT INTO flag_countries (id, name_fr, name_en, name_he, storage_path)
+-- VALUES ('pl', 'Pologne', 'Poland', 'פולין', 'pl.svg')
+-- ON CONFLICT (id) DO UPDATE SET
+--   name_fr = EXCLUDED.name_fr,
+--   name_en = EXCLUDED.name_en,
+--   name_he = EXCLUDED.name_he,
+--   storage_path = EXCLUDED.storage_path;
+
+-- INSERT INTO flag_panel_countries (panel_id, country_id, sort_order)
+-- VALUES ('starter_20', 'pl', 21)
+-- ON CONFLICT (panel_id, country_id) DO UPDATE SET sort_order = EXCLUDED.sort_order;

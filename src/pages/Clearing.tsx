@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type CSSProperties } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useProfileStore } from '../store/profileStore'
 import { supabase } from '../lib/supabase'
@@ -9,6 +9,8 @@ import mollasson from '../img/mollasson.png'
 import bobby from '../img/bobby.png'
 import tartuffe from '../img/tartuffe.png'
 import betachou from '../img/betachou.png'
+import dauphinouJump from '../img/coding/dauphinou_jump.png'
+import mollassonFront from '../img/coding/mollasson_front.png'
 
 const characterImages: Record<string, string> = {
   Patapam: patapamImg,
@@ -19,21 +21,52 @@ const characterImages: Record<string, string> = {
   Betachou: betachou,
 }
 
-interface Zone {
-  id: string
+interface ClearingPanelProps {
+  style: CSSProperties
+  onClick: () => void
   label: string
-  emoji: string
-  route: string
-  color: string
-  unlocked: boolean
 }
 
-const ZONES: Zone[] = [
-  { id: 'dauphinou', label: 'Côte de Dauphinou', emoji: '🌊', route: '/zone/dauphinou', color: 'bg-patapam-blue',   unlocked: true  },
-  { id: 'tartuffe',  label: 'Montagne de Tartuffe', emoji: '⛰️',  route: '/zone/tartuffe',  color: 'bg-patapam-purple', unlocked: false },
-  { id: 'mollasson', label: 'Forêt de Mollasson', emoji: '🌿', route: '/zone/mollasson', color: 'bg-patapam-green',  unlocked: false },
-  { id: 'bobby',     label: 'Village de Bobby',   emoji: '🏘️', route: '/zone/bobby',     color: 'bg-patapam-yellow', unlocked: false },
-]
+function ClearingPanel({ style, onClick, label }: ClearingPanelProps) {
+  return (
+    <button
+      onClick={onClick}
+      style={style}
+      className="group relative flex items-center justify-center border-2 border-transparent hover:border-white/60 hover:bg-white/20 transition-all duration-200 rounded-lg"
+    >
+      <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-white font-bold text-sm drop-shadow-lg bg-black/40 px-2 py-1 rounded-lg">
+        {label}
+      </span>
+    </button>
+  )
+}
+
+interface ClearingMarkerProps {
+  src: string
+  label: string
+  style: CSSProperties
+  className?: string
+}
+
+/** Icône décorative sur l'image de fond (position en % par rapport à la clairière) */
+function ClearingMarker({ src, label, style, className }: ClearingMarkerProps) {
+  return (
+    <div
+      style={{ position: 'absolute', ...style }}
+      className="group z-10 cursor-default"
+      title={label}
+    >
+      <img
+        src={src}
+        alt={label}
+        className={className ?? 'w-full h-full object-contain pointer-events-none'}
+      />
+      <span className="absolute bottom-full left-0 mb-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-white font-bold text-sm drop-shadow-lg bg-black/40 px-2 py-1 rounded-lg whitespace-nowrap pointer-events-none">
+        {label}
+      </span>
+    </div>
+  )
+}
 
 export default function Clearing() {
   const navigate = useNavigate()
@@ -99,37 +132,44 @@ export default function Clearing() {
             className="absolute inset-0 w-full h-full object-fill"
           />
 
+          {/* Icônes sur l'image (à ajuster : left / bottom en %) */}
+          <ClearingMarker
+            src={dauphinouJump}
+            label="Grotte de Dauphinou"
+            style={{ left: '4.25%', bottom: '26.5%', width: '4%', height: '4%' }}
+          />
+          <ClearingMarker
+            src={mollassonFront}
+            label="Arbre de Mollasson"
+            style={{ left: '4.5%', bottom: '22%', width: '4%', height: '4%' }}
+          />
+
           {/* Zones cliquables */}
-          {/* Jeux — centre */}
-          <button
+          <ClearingPanel
+            onClick={() => navigate('/education')}
+            style={{ position: 'absolute', top: '0%', left: '0%', width: '33.33%', height: '33.33%' }}
+            label="🎓 Éducation"
+          />
+          <ClearingPanel
+            onClick={() => navigate('/beach')}
+            style={{ position: 'absolute', top: '66.66%', left: '0%', width: '33.33%', height: '33.34%' }}
+            label="🏖️ Plage"
+          />
+          <ClearingPanel
             onClick={() => navigate('/games')}
             style={{ position: 'absolute', top: '40%', left: '30%', width: '40%', height: '26%' }}
-            className="group flex items-center justify-center border-2 border-transparent hover:border-white/60 hover:bg-white/20 transition-all duration-200 rounded-lg"
-          >
-            <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-white font-bold text-sm drop-shadow-lg bg-black/40 px-2 py-1 rounded-lg">
-              🎮 Les Jeux
-            </span>
-          </button>
-          {/* Bibliothèque — tiers central, premier tiers en hauteur (à ajuster) */}
-          <button
+            label="🎮 Les Jeux"
+          />
+          <ClearingPanel
             onClick={() => navigate('/library')}
             style={{ position: 'absolute', top: '0%', left: '33%', width: '37%', height: '40%' }}
-            className="group flex items-center justify-center border-2 border-transparent hover:border-white/60 hover:bg-white/20 transition-all duration-200 rounded-lg"
-          >
-            <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-white font-bold text-sm drop-shadow-lg bg-black/40 px-2 py-1 rounded-lg">
-              📚 Bibliothèque
-            </span>
-          </button>
-          {/* Cabane — haut droite (à ajuster) */}
-          <button
+            label="📚 Bibliothèque"
+          />
+          <ClearingPanel
             onClick={() => navigate('/cabin')}
             style={{ position: 'absolute', top: '0%', left: '70%', width: '30%', height: '50%' }}
-            className="group flex items-center justify-center border-2 border-transparent hover:border-white/60 hover:bg-white/20 transition-all duration-200 rounded-lg"
-          >
-            <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-white font-bold text-sm drop-shadow-lg bg-black/40 px-2 py-1 rounded-lg">
-              🏠 La Cabane
-            </span>
-          </button>
+            label="🏠 La Cabane"
+          />
         </div>
       </div>
     </div>
