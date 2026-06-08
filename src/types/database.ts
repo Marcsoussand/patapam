@@ -107,6 +107,48 @@ export type Database = {
         }
         Relationships: []
       }
+      cabin_items: {
+        Row: {
+          created_at: string | null
+          floors: number[]
+          height_pct: number
+          id: string
+          is_active: boolean
+          name_en: string
+          name_fr: string
+          name_he: string
+          sort_order: number
+          storage_path: string
+          width_pct: number
+        }
+        Insert: {
+          created_at?: string | null
+          floors?: number[]
+          height_pct?: number
+          id: string
+          is_active?: boolean
+          name_en: string
+          name_fr: string
+          name_he: string
+          sort_order?: number
+          storage_path: string
+          width_pct?: number
+        }
+        Update: {
+          created_at?: string | null
+          floors?: number[]
+          height_pct?: number
+          id?: string
+          is_active?: boolean
+          name_en?: string
+          name_fr?: string
+          name_he?: string
+          sort_order?: number
+          storage_path?: string
+          width_pct?: number
+        }
+        Relationships: []
+      }
       inventory: {
         Row: {
           acquired_at: string | null

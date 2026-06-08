@@ -15,6 +15,7 @@ import Cabin from './pages/Cabin'
 import Games from './pages/Games'
 import Collection from './pages/Collection'
 import Library from './pages/Library'
+import Beach from './pages/Beach'
 import ParentDashboard from './pages/ParentDashboard'
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
@@ -78,6 +79,9 @@ export default function App() {
         } />
         <Route path="/library" element={
           <RequireAuth><RequireProfile><Library /></RequireProfile></RequireAuth>
+        } />
+        <Route path="/beach" element={
+          <RequireAuth><RequireProfile><Beach /></RequireProfile></RequireAuth>
         } />
         <Route path="/games" element={
           <RequireAuth><RequireProfile><Games /></RequireProfile></RequireAuth>
