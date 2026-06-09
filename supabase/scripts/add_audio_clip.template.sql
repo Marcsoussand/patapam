@@ -1,0 +1,21 @@
+-- ============================================================
+-- Ajouter un clip audio au catalogue Patapam
+-- ============================================================
+--
+-- 1. Storage → bucket patapam-audio → shared/{locale}/…/*.m4a
+-- 2. Exécuter ce script (adapter les valeurs)
+--
+-- Categories courantes :
+--   congrats, encouragement, math_prompt, math_number_unit, math_number_ten,
+--   math_number_hundred, math_number_link, math_number_special,
+--   flags_prompt, flags_article, flags_country, vocab_word
+--
+-- INSERT INTO audio_clips (clip_key, category, locale, label, storage_path, sort_order)
+-- VALUES (
+--   'super',
+--   'congrats',
+--   'fr',
+--   'Super !',
+--   'shared/fr/congrats/super.m4a',
+--   3
+-- );

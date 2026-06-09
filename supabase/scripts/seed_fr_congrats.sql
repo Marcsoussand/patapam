@@ -1,0 +1,6 @@
+-- ============================================================
+-- Seed — félicitations FR supplémentaires (optionnel)
+-- ============================================================
+--
+-- Les 12 congrats FR sont déjà dans 20260606_patapam_audio.sql.
+-- Utiliser ce fichier ou generate_congrats_seed.py pour en ajouter d'autres.

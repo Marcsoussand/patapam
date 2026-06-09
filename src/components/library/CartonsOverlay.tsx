@@ -12,6 +12,7 @@ import {
   type CardWord,
   type CategoryKey,
 } from '../../data/cartons'
+import { playCongrats, stopPatapamAudio } from '../../lib/audioClips'
 import './cartons.css'
 
 type SetupScreen = 'age' | 'category' | 'mode'
@@ -178,6 +179,7 @@ export default function CartonsOverlay({ open, onClose }: CartonsOverlayProps) {
       audioRef.current.pause()
       audioRef.current = null
     }
+    stopPatapamAudio()
   }, [])
 
   const clearLearnTimers = useCallback(() => {
@@ -298,11 +300,6 @@ export default function CartonsOverlay({ open, onClose }: CartonsOverlayProps) {
     if (isCorrect) {
       setFindFeedback({ [card.fr]: 'correct' })
       stopAudio()
-      const congrats = ['bravo', 'champion']
-      const pick = congrats[Math.floor(Math.random() * congrats.length)]
-      const snd = new Audio(`/audio/congrats/francais/${pick}.m4a`)
-      audioRef.current = snd
-      snd.play().catch(() => {})
 
       const nextSeen = [...findSeen, findRound.correct.fr]
       const advance = () => {
@@ -310,13 +307,20 @@ export default function CartonsOverlay({ open, onClose }: CartonsOverlayProps) {
         setFindRound(null)
       }
 
-      snd.addEventListener('ended', advance, { once: true })
-      setTimeout(() => {
-        if (!snd.ended) {
-          snd.pause()
+      void playCongrats(language).then((snd) => {
+        if (!snd) {
           advance()
+          return
         }
-      }, 3000)
+        audioRef.current = snd
+        snd.addEventListener('ended', advance, { once: true })
+        setTimeout(() => {
+          if (!snd.ended) {
+            snd.pause()
+            advance()
+          }
+        }, 3000)
+      })
     } else {
       setFindFeedback({ [card.fr]: 'wrong' })
     }

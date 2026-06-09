@@ -14,6 +14,7 @@ import {
 } from '../lib/codingProgress'
 import { useProfileStore } from '../store/profileStore'
 import { supabase } from '../lib/supabase'
+import { playCongrats } from '../lib/audioClips'
 import './coding-game.css'
 
 const KEY_CELL_COLOR: Partial<Record<CellType, string>> = {
@@ -47,6 +48,7 @@ function GameScreen({
   const addCoins = useProfileStore((s) => s.addCoins)
   const [rewardCoins, setRewardCoins] = useState(0)
   const coinsAwardedRef = useRef(false)
+  const congratsPlayedRef = useRef(false)
 
   const keyTypes = [
     ...new Set(
@@ -67,6 +69,7 @@ function GameScreen({
   useEffect(() => {
     if (status !== 'success') {
       coinsAwardedRef.current = false
+      congratsPlayedRef.current = false
       setRewardCoins(0)
       return
     }
@@ -86,6 +89,13 @@ function GameScreen({
         })
     }
   }, [status, profileId, activeProfile, addCoins])
+
+  useEffect(() => {
+    if (status !== 'success') return
+    if (congratsPlayedRef.current) return
+    congratsPlayedRef.current = true
+    void playCongrats()
+  }, [status])
 
   useEffect(() => {
     if (status !== 'success') return

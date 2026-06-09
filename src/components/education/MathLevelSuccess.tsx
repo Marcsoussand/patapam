@@ -1,6 +1,8 @@
+import { useEffect } from 'react'
 import redFlower from '../../img/coding/obstacles/mollasson/red_flower.png'
 import orangeFlower from '../../img/coding/obstacles/mollasson/orange_flower.png'
 import { starLabel } from '../../education/utils/mathStars'
+import { playCongrats } from '../../lib/audioClips'
 
 interface MathLevelSuccessProps {
   title: string
@@ -21,6 +23,10 @@ export default function MathLevelSuccess({
   onReplay,
   onContinue,
 }: MathLevelSuccessProps) {
+  useEffect(() => {
+    void playCongrats()
+  }, [])
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-4">
       <div className="relative max-w-sm w-full rounded-3xl bg-white px-6 py-8 text-center shadow-2xl">

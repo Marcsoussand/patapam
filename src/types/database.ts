@@ -107,6 +107,53 @@ export type Database = {
         }
         Relationships: []
       }
+      audio_clips: {
+        Row: {
+          category: string
+          clip_key: string
+          created_at: string | null
+          id: string
+          is_active: boolean
+          label: string
+          locale: string
+          sort_order: number
+          storage_path: string
+          voice_profile_id: string | null
+        }
+        Insert: {
+          category: string
+          clip_key: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean
+          label: string
+          locale: string
+          sort_order?: number
+          storage_path: string
+          voice_profile_id?: string | null
+        }
+        Update: {
+          category?: string
+          clip_key?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean
+          label?: string
+          locale?: string
+          sort_order?: number
+          storage_path?: string
+          voice_profile_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'audio_clips_voice_profile_id_fkey'
+            columns: ['voice_profile_id']
+            isOneToOne: false
+            referencedRelation: 'voice_profiles'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       cabin_items: {
         Row: {
           created_at: string | null
@@ -449,6 +496,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      voice_profiles: {
+        Row: {
+          created_at: string | null
+          id: string
+          label: string
+          parent_id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          label?: string
+          parent_id: string
+          status?: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          label?: string
+          parent_id?: string
+          status?: string
+        }
+        Relationships: []
       }
       words: {
         Row: {
