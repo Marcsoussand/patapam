@@ -9,17 +9,20 @@ interface DragData {
   index?: number
 }
 
-function resolveDropRow(
+function resolveDropSlot(
   e: DragEvent<HTMLElement>,
   displaySlots: (ActionId | null)[],
   prefillSeq: (ActionId | null)[],
+  horizontal: boolean,
 ): number | null {
   const container = e.currentTarget
-  const y = e.clientY
 
   for (const row of container.querySelectorAll<HTMLElement>('[data-seq-row]')) {
-    const { top, bottom } = row.getBoundingClientRect()
-    if (y >= top && y < bottom) {
+    const { top, bottom, left, right } = row.getBoundingClientRect()
+    const inside = horizontal
+      ? e.clientX >= left && e.clientX < right
+      : e.clientY >= top && e.clientY < bottom
+    if (inside) {
       const idx = Number(row.dataset.seqRow)
       if (Number.isNaN(idx)) return null
       if (displaySlots[idx] === null && prefillSeq[idx] === null) return idx
@@ -36,7 +39,8 @@ export default function Sequencer() {
   const isRunning = status === 'running'
   const [dropOverIdx, setDropOverIdx] = useState<number | null>(null)
 
-  const isVertical = currentLevel.viewMode !== 'sidescroll'
+  const isHorizontal = currentLevel.viewMode === 'sidescroll'
+  const isVertical = !isHorizontal
 
   if (!displaySlots) {
     return null
@@ -64,7 +68,7 @@ export default function Sequencer() {
 
   function handleDrop(e: DragEvent<HTMLElement>) {
     e.preventDefault()
-    const idx = resolveDropRow(e, slots, prefillSeq)
+    const idx = resolveDropSlot(e, slots, prefillSeq, isHorizontal)
     setDropOverIdx(null)
     if (idx === null) return
 
@@ -77,7 +81,7 @@ export default function Sequencer() {
   function handleDragOver(e: DragEvent<HTMLElement>) {
     e.preventDefault()
     e.dataTransfer.dropEffect = 'copy'
-    setDropOverIdx(resolveDropRow(e, slots, prefillSeq))
+    setDropOverIdx(resolveDropSlot(e, slots, prefillSeq, isHorizontal))
   }
 
   function handleDragLeave(e: DragEvent<HTMLElement>) {
@@ -90,7 +94,15 @@ export default function Sequencer() {
   const canClear = slots.some((s, i) => s !== null && prefillSeq[i] === null)
 
   return (
-    <div className={`coding-sequencer ${isVertical ? 'coding-sequencer--vertical' : ''}`}>
+    <div
+      className={[
+        'coding-sequencer',
+        isVertical ? 'coding-sequencer--vertical' : '',
+        isHorizontal ? 'coding-sequencer--horizontal' : '',
+      ]
+        .filter(Boolean)
+        .join(' ')}
+    >
       <div className="coding-sequencer-header">
         <span className="coding-sequencer-title">Ta séquence</span>
         <span className="coding-sequencer-count">
@@ -109,7 +121,13 @@ export default function Sequencer() {
       </div>
 
       <div
-        className={`coding-seq-slots ${isVertical ? 'coding-seq-slots--vertical' : ''}`}
+        className={[
+          'coding-seq-slots',
+          isVertical ? 'coding-seq-slots--vertical' : '',
+          isHorizontal ? 'coding-seq-slots--horizontal' : '',
+        ]
+          .filter(Boolean)
+          .join(' ')}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}

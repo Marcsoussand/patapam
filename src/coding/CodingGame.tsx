@@ -181,13 +181,33 @@ function GameScreen({
           <p className="coding-level-desc">{description}</p>
         </header>
 
-        <div className="coding-game-body">
-          <div className="coding-game-center">
-            <Grid />
-          </div>
-          <div className="coding-game-sequence">
-            <Sequencer />
-          </div>
+        <div
+          className={[
+            'coding-game-body',
+            currentLevel.viewMode === 'sidescroll' ? 'coding-game-body--sidescroll' : '',
+          ]
+            .filter(Boolean)
+            .join(' ')}
+        >
+          {currentLevel.viewMode === 'sidescroll' ? (
+            <div className="coding-game-playfield">
+              <div className="coding-game-center">
+                <Grid />
+              </div>
+              <div className="coding-game-sequence coding-game-sequence--below">
+                <Sequencer />
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="coding-game-center">
+                <Grid />
+              </div>
+              <div className="coding-game-sequence">
+                <Sequencer />
+              </div>
+            </>
+          )}
           <aside className="coding-game-actions">
             <ActionPanel />
             {hasKeyLevel && (

@@ -118,7 +118,7 @@ export default function Grid() {
                 )}
                 {isEnd && !isHero && <span className="coding-end-flag">🏆</span>}
                 {isGhost && (
-                  <div className="coding-hero-cell">
+                  <div className="coding-hero-cell coding-hero-cell--ghost">
                     <Hero hero={hero} direction={ghostPos!.direction} isSuccess={false} isFailure={false} />
                   </div>
                 )}

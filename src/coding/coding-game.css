@@ -167,6 +167,63 @@
   align-self: flex-start;
 }
 
+/* Dauphinou — grille horizontale, séquence en dessous */
+.coding-game-body--sidescroll {
+  flex-wrap: nowrap;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 1.25rem;
+}
+
+.coding-game-playfield {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+  max-width: min(100%, 720px);
+}
+
+.coding-game-body--sidescroll .coding-game-center {
+  justify-content: center;
+  width: 100%;
+}
+
+.coding-game-sequence--below {
+  width: 100%;
+  flex: none;
+  align-self: stretch;
+}
+
+.coding-game-sequence--below .coding-sequencer {
+  max-height: none;
+  overflow: visible;
+}
+
+.coding-sequencer--horizontal .coding-sequencer-header {
+  justify-content: center;
+}
+
+.coding-seq-slots--horizontal {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.35rem;
+}
+
+.coding-seq-slots--horizontal .coding-seq-row {
+  min-height: auto;
+  width: auto;
+}
+
+.coding-sequencer--horizontal .coding-seq-controls {
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
 /* Grille top-down */
 .coding-grid--topdown {
   display: grid;
@@ -581,6 +638,14 @@
   .coding-game-body {
     flex-direction: column;
     align-items: center;
+  }
+
+  .coding-game-body--sidescroll {
+    flex-wrap: wrap;
+  }
+
+  .coding-game-playfield {
+    max-width: 100%;
   }
 
   .coding-game-center,
