@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo, type CSSProperties } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useProfileStore } from '../store/profileStore'
 import { supabase } from '../lib/supabase'
-import { clearingBgmUrl } from '../lib/clearingMusic'
+import { zoneBgmUrl } from '../lib/zoneMusic'
 import { usePageMusic } from '../hooks/usePageMusic'
 import patapamImg from '../img/patapam_debout.png'
 import clairiereImg from '../img/patapam_clairiere.png'
@@ -87,7 +87,7 @@ export default function Clearing() {
 
   const avatarImg = charName ? characterImages[charName] : null
 
-  const bgmUrl = useMemo(() => clearingBgmUrl(), [])
+  const bgmUrl = useMemo(() => zoneBgmUrl('clearing'), [])
   usePageMusic(bgmUrl)
 
   return (

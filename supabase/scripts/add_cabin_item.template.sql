@@ -31,7 +31,8 @@ INSERT INTO cabin_items (
   height_pct,
   floors,
   sort_order,
-  is_active
+  is_active,
+  price_coins
 ) VALUES (
   'mon_objet',           -- id unique (snake_case, = clé inventaire)
   'Mon objet',           -- nom affiché FR
@@ -42,7 +43,8 @@ INSERT INTO cabin_items (
   12,                    -- hauteur % scène
   ARRAY[1, 2],           -- étages autorisés : 1, 2 ou les deux
   10,                    -- ordre dans le sac (croissant)
-  true
+  true,
+  15                     -- prix marché en pièces (0 = pas au marché)
 )
 ON CONFLICT (id) DO UPDATE SET
   name_fr      = EXCLUDED.name_fr,
@@ -53,7 +55,8 @@ ON CONFLICT (id) DO UPDATE SET
   height_pct   = EXCLUDED.height_pct,
   floors       = EXCLUDED.floors,
   sort_order   = EXCLUDED.sort_order,
-  is_active    = EXCLUDED.is_active;
+  is_active    = EXCLUDED.is_active,
+  price_coins  = EXCLUDED.price_coins;
 
 -- Test : offrir l'objet à un profil (remplacer l'UUID)
 -- INSERT INTO inventory (profile_id, item_id, quantity)

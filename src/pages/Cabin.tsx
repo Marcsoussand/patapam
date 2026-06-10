@@ -1,7 +1,9 @@
-import { useCallback, useEffect, useRef, useState, type DragEvent } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useProfileStore } from '../store/profileStore'
 import { supabase } from '../lib/supabase'
+import { usePageMusic } from '../hooks/usePageMusic'
+import { zoneBgmUrl } from '../lib/zoneMusic'
 import patapamImg from '../img/patapam_debout.png'
 import cabin1stFloor from '../img/pages/cabin_1st_floor.png'
 import cabin2ndFloor from '../img/pages/cabin_2nd_floor.png'
@@ -52,6 +54,8 @@ export default function Cabin() {
   const [isDropOver, setIsDropOver] = useState(false)
   const [selectedPlacedId, setSelectedPlacedId] = useState<string | null>(null)
   const sceneRef = useRef<HTMLDivElement>(null)
+  const bgmUrl = useMemo(() => zoneBgmUrl('cabin'), [])
+  usePageMusic(bgmUrl)
 
   const catalogMap = catalogById(catalog)
   const [bagVersion, setBagVersion] = useState(0)

@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useProfileStore, type ChildProfile } from '../store/profileStore'
 import { supabase } from '../lib/supabase'
+import { usePageMusic } from '../hooks/usePageMusic'
+import { zoneBgmUrl } from '../lib/zoneMusic'
 import gamesAreaImg from '../img/games_area.png'
 import ticTacToeImg from '../img/games/tic_tac_toe.png'
 import memoryImg from '../img/games/memory.png'
@@ -129,6 +131,8 @@ function shuffleArray<T>(input: T[]) {
 
 export default function Games() {
   const navigate = useNavigate()
+  const bgmUrl = useMemo(() => zoneBgmUrl('games'), [])
+  usePageMusic(bgmUrl)
   const addCoins = useProfileStore((s) => s.addCoins)
   const activeProfile = useProfileStore((s) => s.activeProfile)
   const [selectedGame, setSelectedGame] = useState<GameKey | null>(null)

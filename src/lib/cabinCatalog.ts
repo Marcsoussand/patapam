@@ -4,7 +4,7 @@ import type { CabinItemCatalogEntry } from '../types/cabin'
 export async function loadCabinCatalog(): Promise<CabinItemCatalogEntry[]> {
   const { data, error } = await supabase
     .from('cabin_items')
-    .select('id, name_fr, name_en, name_he, storage_path, width_pct, height_pct, floors, sort_order')
+    .select('id, name_fr, name_en, name_he, storage_path, width_pct, height_pct, floors, sort_order, price_coins')
     .eq('is_active', true)
     .order('sort_order', { ascending: true })
 

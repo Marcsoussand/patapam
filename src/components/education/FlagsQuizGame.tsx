@@ -19,6 +19,7 @@ interface FlagsQuizGameProps {
   onContinue: () => void
   onReplay: () => void
   packEligible?: boolean
+  packLabel?: string
 }
 
 export default function FlagsQuizGame({
@@ -31,6 +32,7 @@ export default function FlagsQuizGame({
   onContinue,
   onReplay,
   packEligible = false,
+  packLabel = 'pack',
 }: FlagsQuizGameProps) {
   const questions = useMemo(
     () => generateFlagQuestionSequence(countries, questionCount, choiceCount),
@@ -103,7 +105,7 @@ export default function FlagsQuizGame({
           stars={stars as 1 | 2 | 3}
           coinsAwarded={coinsAwarded}
           packAwarded={earnedPack}
-          packLabel="pack or"
+          packLabel={packLabel}
           onReplay={onReplay}
           onContinue={onContinue}
         />

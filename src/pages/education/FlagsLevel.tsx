@@ -13,13 +13,17 @@ import {
 } from '../../lib/flagProgress'
 import { awardProfileCoins, mathVictoryCoins } from '../../lib/awardProfileCoins'
 import { awardPack, withPackInventory } from '../../lib/collectionPacks'
+import {
+  earnsFlagPackAtThreeStars,
+  flagLevelPackReward,
+} from '../../education/data/flagLevelRewards'
 import type { FlagPanel } from '../../types/flags'
 
 export default function FlagsLevel() {
   const navigate = useNavigate()
   const { levelNum: levelNumParam } = useParams<{ levelNum: string }>()
   const profile = useProfileStore((s) => s.activeProfile)
-  const setActiveProfile = useProfileStore((s) => s.setActiveProfile)
+  const patchActiveProfile = useProfileStore((s) => s.patchActiveProfile)
   const addCoins = useProfileStore((s) => s.addCoins)
 
   const levelNum = Number(levelNumParam)
@@ -51,12 +55,14 @@ export default function FlagsLevel() {
   const maxUnlocked = maxUnlockedFlagLevel(FLAG_LEVELS.length, progress)
   const locked = !level || level.id > maxUnlocked
   const previousStars = level ? (progress[flagLevelKey(level.id)] ?? 0) : 0
-  const packEligible = level?.id === 3 && previousStars < 3
+  const packReward = level ? flagLevelPackReward(level.id) : undefined
+  const packEligible = level ? earnsFlagPackAtThreeStars(level.id, previousStars) : false
 
   async function handleComplete(_correct: number, stars: 0 | 1 | 2 | 3): Promise<number> {
     if (!profile || !level) return 0
 
     const coinsToAdd = mathVictoryCoins(previousStars, stars)
+    const earnPack = earnsFlagPackAtThreeStars(level.id, previousStars) && stars === 3
 
     if (stars >= 1) {
       const best = await saveFlagProgress(profile.id, level.id, stars, previousStars)
@@ -72,17 +78,13 @@ export default function FlagsLevel() {
       if (ok) nextCoins += coinsToAdd
     }
 
-    if (packEligible && stars === 3) {
-      const inventory = await awardPack(profile.id, nextGarden, 'gold')
+    if (earnPack && packReward) {
+      const inventory = await awardPack(profile.id, nextGarden, packReward.type)
       nextGarden = withPackInventory(nextGarden, inventory)
     }
 
-    if (coinsToAdd > 0 || (packEligible && stars === 3)) {
-      setActiveProfile({
-        ...profile,
-        coins: nextCoins,
-        garden_state: nextGarden,
-      })
+    if (coinsToAdd > 0 || earnPack) {
+      patchActiveProfile({ coins: nextCoins, garden_state: nextGarden })
     }
 
     return coinsToAdd
@@ -173,6 +175,7 @@ export default function FlagsLevel() {
           starThresholds={level.starThresholds}
           title={level.titleFr}
           packEligible={packEligible}
+          packLabel={packReward?.label ?? 'pack'}
           onComplete={handleComplete}
           onReplay={() => setGameAttempt((a) => a + 1)}
           onContinue={() => navigate('/education/flags')}
