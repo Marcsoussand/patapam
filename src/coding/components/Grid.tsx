@@ -7,6 +7,7 @@ import node from '../../img/coding/obstacles/mollasson/node.png'
 import betachouObstacle from '../../img/coding/obstacles/mollasson/betachou_obstacle.png'
 import rockSurface from '../../img/coding/obstacles/dauphinou/rock_surface.png'
 import palmTree from '../../img/coding/obstacles/dauphinou/palm_tree.png'
+import dauphinouMer from '../../img/coding/dauphinou_mer.png'
 import { executeStep, isBetachouHome } from '../engine/gameEngine'
 import { borderObstacles } from '../utils/gridObstacles'
 import type { ActionId, CellType, HeroPos, ObstacleId } from '../types/game'
@@ -67,7 +68,13 @@ export default function Grid() {
     return (
       <div
         className="coding-grid coding-grid--sidescroll"
-        style={{ width: cols * SIDE_W, height: rows * SIDE_H }}
+        style={{
+          width: cols * SIDE_W,
+          height: rows * SIDE_H,
+          backgroundImage: `url(${dauphinouMer})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        }}
       >
         {grid.flatMap((row, rowIdx) =>
           row.map((cell, colIdx) => {

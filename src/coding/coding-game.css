@@ -4,10 +4,17 @@
   position: fixed;
   inset: 0;
   z-index: 200;
-  background: linear-gradient(180deg, #6d8f5e 0%, #4a6741 55%, #3d5a35 100%);
   overflow: auto;
   color: #1a1a2e;
   font-family: var(--font-patapam), system-ui, sans-serif;
+}
+
+.coding-game--forest {
+  background: linear-gradient(180deg, #6d8f5e 0%, #4a6741 55%, #3d5a35 100%);
+}
+
+.coding-game--sea {
+  background: linear-gradient(180deg, #4fc3f7 0%, #0288d1 45%, #01579b 100%);
 }
 
 .coding-game--loading {
@@ -547,11 +554,14 @@
   color: #555;
 }
 
-/* Sidescroll (Dauphinou — futur) */
+/* Sidescroll (Dauphinou) */
 .coding-grid--sidescroll {
   position: relative;
-  background: linear-gradient(180deg, #87ceeb 30%, #0288d1 70%, #01579b 100%);
   border-radius: 12px;
+  box-shadow:
+    inset 0 0 0 4px rgba(255, 255, 255, 0.25),
+    0 10px 32px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
 }
 
 .coding-cell-side {

@@ -157,9 +157,20 @@ export default function CartonsOverlay({ open, onClose }: CartonsOverlayProps) {
   const [findRound, setFindRound] = useState<FindRound | null>(null)
   const [findFeedback, setFindFeedback] = useState<Record<string, 'correct' | 'wrong'>>({})
   const [categoryWords, setCategoryWords] = useState<CardWord[] | null>(null)
+  const [wordsCategoryKey, setWordsCategoryKey] = useState<CategoryKey | null>(null)
 
   const learnWordRef = useRef<HTMLDivElement>(null)
   const learnTimersRef = useRef<ReturnType<typeof setTimeout>[]>([])
+  const playbackSessionRef = useRef(0)
+
+  const invalidatePlayback = useCallback(() => {
+    playbackSessionRef.current += 1
+  }, [])
+
+  const stopAllPlayback = useCallback(() => {
+    invalidatePlayback()
+    stopSfx()
+  }, [invalidatePlayback])
 
   const ageLabel =
     ageGroup === 'young'
@@ -174,30 +185,32 @@ export default function CartonsOverlay({ open, onClose }: CartonsOverlayProps) {
     ageGroup === 'older' ? 2 / 3 : 1,
   )
 
-  const stopAudio = useCallback(() => {
-    stopSfx()
-  }, [])
-
   const clearLearnTimers = useCallback(() => {
     learnTimersRef.current.forEach(clearTimeout)
     learnTimersRef.current = []
   }, [])
 
-  const resetState = useCallback(() => {
+  const resetCardSession = useCallback(() => {
     clearLearnTimers()
-    stopAudio()
-    setScreen('age')
-    setAgeGroup(null)
-    setCategoryKey(null)
+    stopAllPlayback()
     setCardMode(null)
-    setShowDoman(false)
     setLearnIndex(0)
-    setLearnWordVisible(true)
+    setLearnWordVisible(false)
     setFindSeen([])
     setFindRound(null)
     setFindFeedback({})
+  }, [clearLearnTimers, stopAllPlayback])
+
+  const resetState = useCallback(() => {
+    resetCardSession()
+    setScreen('age')
+    setAgeGroup(null)
+    setCategoryKey(null)
+    setShowDoman(false)
+    setLearnWordVisible(true)
     setCategoryWords(null)
-  }, [clearLearnTimers, stopAudio])
+    setWordsCategoryKey(null)
+  }, [resetCardSession])
 
   const handleClose = useCallback(() => {
     resetState()
@@ -205,20 +218,22 @@ export default function CartonsOverlay({ open, onClose }: CartonsOverlayProps) {
   }, [onClose, resetState])
 
   const exitCardMode = useCallback(() => {
-    clearLearnTimers()
-    stopAudio()
-    setCardMode(null)
-    setLearnIndex(0)
-    setLearnWordVisible(true)
-    setFindSeen([])
-    setFindRound(null)
-    setFindFeedback({})
+    resetCardSession()
     setScreen('mode')
-  }, [clearLearnTimers, stopAudio])
+  }, [resetCardSession])
+
+  const selectCategory = useCallback(
+    (key: CategoryKey) => {
+      resetCardSession()
+      setCategoryKey(key)
+      setScreen('mode')
+    },
+    [resetCardSession],
+  )
 
   const startFindRound = useCallback(
     (seen: string[]) => {
-      if (!categoryKey || !categoryWords?.length) return
+      if (!categoryKey || wordsCategoryKey !== categoryKey || !categoryWords?.length) return
 
       if (seen.length >= categoryWords.length) {
         exitCardMode()
@@ -234,21 +249,31 @@ export default function CartonsOverlay({ open, onClose }: CartonsOverlayProps) {
       setFindRound({ correct, cards })
       setFindFeedback({})
 
-      stopAudio()
-      void playCartonWhereisAudio(correct, categoryKey, language)
+      stopAllPlayback()
+      const session = playbackSessionRef.current
+      void playCartonWhereisAudio(correct, categoryKey, language, {
+        isActive: () => playbackSessionRef.current === session,
+      })
     },
-    [categoryKey, categoryWords, exitCardMode, language, stopAudio],
+    [categoryKey, categoryWords, wordsCategoryKey, exitCardMode, language, stopAllPlayback],
   )
 
   useEffect(() => {
     if (!categoryKey || !ageGroup) {
       setCategoryWords(null)
+      setWordsCategoryKey(null)
       return
     }
 
+    setCategoryWords(null)
+    setWordsCategoryKey(null)
+
     let cancelled = false
     void loadCartonCategoryWords(categoryKey, ageGroup, language).then((words) => {
-      if (!cancelled) setCategoryWords(words)
+      if (!cancelled) {
+        setCategoryWords(words)
+        setWordsCategoryKey(categoryKey)
+      }
     })
     return () => {
       cancelled = true
@@ -260,7 +285,8 @@ export default function CartonsOverlay({ open, onClose }: CartonsOverlayProps) {
   }, [open, resetState])
 
   useEffect(() => {
-    if (cardMode !== 'learn' || !categoryKey || !categoryWords?.length) return
+    if (cardMode !== 'learn' || !categoryKey || wordsCategoryKey !== categoryKey) return
+    if (!categoryWords?.length) return
 
     if (learnIndex >= categoryWords.length) {
       exitCardMode()
@@ -269,8 +295,11 @@ export default function CartonsOverlay({ open, onClose }: CartonsOverlayProps) {
 
     setLearnWordVisible(true)
     const word = categoryWords[learnIndex]
-    stopAudio()
-    void playCartonLearnAudio(word, categoryKey)
+    const session = ++playbackSessionRef.current
+    stopSfx()
+    void playCartonLearnAudio(word, categoryKey, {
+      isActive: () => playbackSessionRef.current === session,
+    })
 
     const hideTimer = setTimeout(() => setLearnWordVisible(false), 10_000)
     const advanceTimer = setTimeout(() => {
@@ -279,40 +308,49 @@ export default function CartonsOverlay({ open, onClose }: CartonsOverlayProps) {
     learnTimersRef.current = [hideTimer, advanceTimer]
 
     return () => {
+      playbackSessionRef.current += 1
       clearLearnTimers()
-      stopAudio()
+      stopSfx()
     }
   }, [
     cardMode,
     categoryKey,
     categoryWords,
+    wordsCategoryKey,
     learnIndex,
     clearLearnTimers,
-    stopAudio,
     exitCardMode,
   ])
 
   useEffect(() => {
-    if (cardMode === 'find' && findRound === null && categoryWords?.length) {
+    if (
+      cardMode === 'find' &&
+      findRound === null &&
+      wordsCategoryKey === categoryKey &&
+      categoryWords?.length
+    ) {
       startFindRound(findSeen)
     }
-  }, [cardMode, findRound, findSeen, categoryWords, startFindRound])
+  }, [cardMode, findRound, findSeen, categoryKey, categoryWords, wordsCategoryKey, startFindRound])
 
   if (!open) return null
 
+  const activeWords =
+    wordsCategoryKey === categoryKey && categoryWords ? categoryWords : null
+
   const currentLearnWord =
-    cardMode === 'learn' && categoryWords && learnIndex < categoryWords.length
-      ? categoryWords[learnIndex]
+    cardMode === 'learn' && activeWords && learnIndex < activeWords.length
+      ? activeWords[learnIndex]
       : null
 
-  const wordsReady = Boolean(categoryWords?.length)
+  const wordsReady = Boolean(activeWords?.length)
 
   function handleFindPick(card: CardWord, isCorrect: boolean) {
     if (!findRound || findFeedback[card.id]) return
 
     if (isCorrect) {
       setFindFeedback({ [card.id]: 'correct' })
-      stopAudio()
+      stopAllPlayback()
 
       const nextSeen = [...findSeen, findRound.correct.id]
       const advance = () => {
@@ -397,10 +435,7 @@ export default function CartonsOverlay({ open, onClose }: CartonsOverlayProps) {
                     key={key}
                     type="button"
                     className="cartons-category-btn"
-                    onClick={() => {
-                      setCategoryKey(key)
-                      setScreen('mode')
-                    }}
+                    onClick={() => selectCategory(key)}
                   >
                     {t(`library.cartons.categories.${key}`)}
                   </button>

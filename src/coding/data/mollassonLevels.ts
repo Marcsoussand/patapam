@@ -311,6 +311,4 @@ export const MOLLASSON_LEVELS: Level[] = [
   LEVEL_20,
 ]
 
-export function codingLevelKey(hero: string, levelId: string): string {
-  return `${hero}:${levelId}`
-}
+export { codingLevelKey } from './codingLevelKey'

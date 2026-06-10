@@ -1,0 +1,135 @@
+.game-rules-info {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+.game-rules-info__btn {
+  background: none;
+  border: 2px solid rgba(255, 255, 255, 0.7);
+  color: white;
+  border-radius: 50%;
+  width: 1.8rem;
+  height: 1.8rem;
+  font-size: 1rem;
+  font-weight: bold;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+
+.game-rules-info__btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.game-rules-info__btn--dark {
+  border-color: rgba(255, 255, 255, 0.55);
+}
+
+.game-rules-info__legend {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.85);
+  text-align: center;
+  line-height: 1.15;
+  max-width: 4.5rem;
+}
+
+.game-rules-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.game-rules-popup {
+  background: #fff;
+  border-radius: 16px;
+  width: min(88vw, 640px);
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+}
+
+.game-rules-popup__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.4rem 0.8rem;
+  border-bottom: 1px solid #eee;
+  background: #f7f7f7;
+  flex-shrink: 0;
+}
+
+.game-rules-popup__header h3 {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  font-size: 1.1rem;
+  color: #333;
+}
+
+.game-rules-popup__close {
+  background: none;
+  border: none;
+  font-size: 1.4rem;
+  cursor: pointer;
+  color: #555;
+  line-height: 1;
+  padding: 0 0.2rem;
+}
+
+.game-rules-popup__close:hover {
+  color: #d32f2f;
+}
+
+.game-rules-popup__body {
+  overflow-y: auto;
+  padding: 1.2rem 1.6rem 1.6rem;
+  font-family: Arial, sans-serif;
+  font-size: 0.95rem;
+  line-height: 1.65;
+  color: #222;
+}
+
+.game-rules-popup__body h4 {
+  margin: 1.1rem 0 0.3rem;
+  font-size: 1rem;
+  color: #1a5276;
+}
+
+.game-rules-popup__body ul {
+  margin: 0.2rem 0 0.6rem 1.4rem;
+  padding: 0;
+}
+
+.game-rules-popup__body li {
+  margin-bottom: 0.25rem;
+}
+
+.game-rules-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.game-rules-title-row h1 {
+  margin: 0;
+}
+
+.game-rules-select-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 1rem;
+}

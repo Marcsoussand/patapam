@@ -54,6 +54,8 @@ export interface Level {
   surfaceRow?: number
   obstacles?: LevelObstacle[]
   betachou?: BetachouConfig
+  /** Niveau affiché dans la barre de progression mais pas encore jouable */
+  comingSoon?: boolean
 }
 
 export interface GameState {
