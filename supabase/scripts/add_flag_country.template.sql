@@ -9,12 +9,13 @@
 --   npm install flag-icons --save-dev
 --   copier node_modules/flag-icons/flags/4x3/xx.svg → exporter en flags/xx.png
 
--- INSERT INTO flag_countries (id, name_fr, name_en, name_he, storage_path)
--- VALUES ('pl', 'Pologne', 'Poland', 'פולין', 'pl.svg')
+-- INSERT INTO flag_countries (id, name_fr, name_en, name_he, article_fr, storage_path)
+-- VALUES ('pl', 'Pologne', 'Poland', 'פולין', 'de la ', 'pl.svg')
 -- ON CONFLICT (id) DO UPDATE SET
 --   name_fr = EXCLUDED.name_fr,
 --   name_en = EXCLUDED.name_en,
 --   name_he = EXCLUDED.name_he,
+--   article_fr = EXCLUDED.article_fr,
 --   storage_path = EXCLUDED.storage_path;
 
 -- INSERT INTO flag_panel_countries (panel_id, country_id, sort_order)

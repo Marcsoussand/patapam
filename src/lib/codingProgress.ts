@@ -37,6 +37,19 @@ export async function saveCodingProgress(
   if (error) console.error('saveCodingProgress', error)
 }
 
+/** Dernier niveau complété (stars >= 1), ou 0 si aucune progression. */
+export function highestCompletedLevelIndex(
+  levels: { id: string }[],
+  hero: string,
+  progress: CodingProgressMap,
+): number {
+  for (let i = levels.length - 1; i >= 0; i--) {
+    const key = codingLevelKey(hero, levels[i].id)
+    if ((progress[key] ?? 0) >= 1) return i
+  }
+  return 0
+}
+
 /** Index max débloqué (strict) : niveau 0 toujours ouvert, N+1 si N complété (stars >= 1). */
 export function maxUnlockedLevelIndex(
   levels: { id: string }[],

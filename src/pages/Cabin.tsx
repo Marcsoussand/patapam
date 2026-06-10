@@ -278,11 +278,18 @@ export default function Cabin() {
             })}
 
             {floor === 1 && (
-              <CabinHotspot
-                style={{ top: 0, right: 0, width: '25%', height: '25%' }}
-                onClick={() => setFloor(2)}
-                label="⬆️ Monter à l'étage"
-              />
+              <>
+                <CabinHotspot
+                  style={{ top: 0, right: 0, width: '25%', height: '25%' }}
+                  onClick={() => setFloor(2)}
+                  label="⬆️ Monter à l'étage"
+                />
+                <CabinHotspot
+                  style={{ bottom: 0, left: '40%', width: '20%', height: '20%' }}
+                  onClick={() => navigate('/')}
+                  label="🌳 Clairière"
+                />
+              </>
             )}
             {floor === 2 && (
               <CabinHotspot

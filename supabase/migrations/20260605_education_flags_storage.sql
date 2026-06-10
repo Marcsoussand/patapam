@@ -23,7 +23,7 @@ VALUES (
   'education-flags',
   true,
   5242880,
-  ARRAY['image/png', 'image/webp', 'image/svg+xml', 'audio/mpeg', 'audio/mp4', 'audio/webm']
+  ARRAY['image/png', 'image/webp', 'image/svg+xml', 'audio/mpeg', 'audio/mp4', 'audio/x-m4a', 'audio/m4a', 'audio/webm']
 )
 ON CONFLICT (id) DO UPDATE SET
   public = EXCLUDED.public,

@@ -9,6 +9,7 @@ import mollasson from '../img/mollasson.png'
 import bobby from '../img/bobby.png'
 import tartuffe from '../img/tartuffe.png'
 import betachou from '../img/betachou.png'
+import FlagsHotspotIcon from '../components/education/FlagsHotspotIcon'
 
 const characterImages: Record<string, string> = {
   Patapam: patapamImg,
@@ -102,19 +103,16 @@ export default function Education() {
             draggable={false}
           />
 
-          {/* Overlay sombre — opacité élevée, ajustable plus tard */}
-          <div className="absolute inset-0 bg-black/55 pointer-events-none" aria-hidden />
-
           <button
             type="button"
             onClick={() => navigate('/education/math')}
-            style={{ position: 'absolute', top: '0%', left: '0%', width: '33.33%', height: '33.33%' }}
-            className="group z-10 flex flex-col items-center justify-center gap-1 rounded-xl border-2 border-transparent hover:border-amber-300/70 hover:bg-white/15 transition-all duration-200"
+            style={{ position: 'absolute', top: '0%', left: '0%', width: '40%', height: '40%' }}
+            className="group z-10 flex flex-col items-center justify-center gap-1 rounded-lg border-2 border-transparent hover:border-white/60 hover:bg-white/20 transition-all duration-200"
           >
-            <span className="text-3xl drop-shadow-lg" aria-hidden>
+            <span className="text-3xl drop-shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200" aria-hidden>
               🔢
             </span>
-            <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-white font-bold text-sm drop-shadow-lg bg-black/50 px-2 py-1 rounded-lg">
+            <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-white font-bold text-sm drop-shadow-lg bg-black/40 px-2 py-1 rounded-lg">
               Maths
             </span>
           </button>
@@ -122,14 +120,27 @@ export default function Education() {
           <button
             type="button"
             onClick={() => navigate('/education/flags')}
-            style={{ position: 'absolute', top: '0%', right: '0%', width: '33.33%', height: '33.33%' }}
-            className="group z-10 flex flex-col items-center justify-center gap-1 rounded-xl border-2 border-transparent hover:border-amber-300/70 hover:bg-white/15 transition-all duration-200"
+            style={{ position: 'absolute', top: '0%', right: '0%', width: '40%', height: '40%' }}
+            className="group z-10 flex flex-col items-center justify-center gap-1 rounded-lg border-2 border-transparent hover:border-white/60 hover:bg-white/20 transition-all duration-200"
           >
-            <span className="text-3xl drop-shadow-lg" aria-hidden>
-              🏳️
-            </span>
-            <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-white font-bold text-sm drop-shadow-lg bg-black/50 px-2 py-1 rounded-lg">
+            <FlagsHotspotIcon className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 drop-shadow-lg" />
+            <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-white font-bold text-sm drop-shadow-lg bg-black/40 px-2 py-1 rounded-lg">
               Drapeaux
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => navigate('/')}
+            style={{ position: 'absolute', bottom: '0%', right: '0%', width: '25%', height: '25%' }}
+            className="group z-10 flex flex-col items-center justify-center gap-1 rounded-lg border-2 border-transparent hover:border-white/60 hover:bg-white/20 transition-all duration-200"
+            aria-label="Retour à la clairière"
+          >
+            <span className="text-3xl drop-shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200" aria-hidden>
+              🌳
+            </span>
+            <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-white font-bold text-sm drop-shadow-lg bg-black/40 px-2 py-1 rounded-lg">
+              Clairière
             </span>
           </button>
         </div>

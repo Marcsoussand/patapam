@@ -1,7 +1,8 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { CompareQuestion } from '../../education/types/math'
 import { generateCompareQuestions } from '../../education/games/generateQuestions'
 import { starLabel, starsFromCorrectCount } from '../../education/utils/mathStars'
+import { playEncouragement, playMathPrompt } from '../../lib/audioClips'
 import MathLevelSuccess from './MathLevelSuccess'
 
 interface CompareNumbersGameProps {
@@ -39,6 +40,16 @@ export default function CompareNumbersGame({
 
   const current: CompareQuestion | undefined = questions[index]
   const prompt = mode === 'max' ? 'Quel est le plus grand ?' : 'Quel est le plus petit ?'
+
+  useEffect(() => {
+    if (finished) return
+    void playMathPrompt(mode)
+  }, [index, mode, finished])
+
+  useEffect(() => {
+    if (!finished || finalStars >= 1) return
+    void playEncouragement()
+  }, [finished, finalStars])
 
   function handleAnswer(value: number) {
     if (finished || !current || feedback) return

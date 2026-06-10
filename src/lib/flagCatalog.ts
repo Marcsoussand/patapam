@@ -18,7 +18,7 @@ export async function loadFlagPanel(panelId: string): Promise<FlagPanel | null> 
 
   const { data: links, error: linksError } = await supabase
     .from('flag_panel_countries')
-    .select('sort_order, flag_countries ( id, name_fr, name_en, name_he, storage_path, audio_path_fr, audio_path_en, audio_path_he )')
+    .select('sort_order, flag_countries ( id, name_fr, name_en, name_he, article_fr, storage_path, audio_path_fr, audio_path_en, audio_path_he )')
     .eq('panel_id', panelId)
     .order('sort_order')
 
@@ -34,6 +34,7 @@ export async function loadFlagPanel(panelId: string): Promise<FlagPanel | null> 
       return c as FlagCountry
     })
     .filter((c): c is FlagCountry => c !== null)
+    .map((c) => ({ ...c, article_fr: c.article_fr ?? 'de ' }))
 
   return {
     ...panel,

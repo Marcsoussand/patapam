@@ -15,6 +15,7 @@ export interface ChildProfile {
 interface ProfileState {
   activeProfile: ChildProfile | null
   setActiveProfile: (profile: ChildProfile | null) => void
+  patchActiveProfile: (patch: Partial<ChildProfile>) => void
   addCoins: (amount: number) => void
   incrementPlayDays: () => void
 }
@@ -25,6 +26,12 @@ export const useProfileStore = create<ProfileState>()(
       activeProfile: null,
 
       setActiveProfile: (profile) => set({ activeProfile: profile }),
+
+      patchActiveProfile: (patch) =>
+        set((state) => {
+          if (!state.activeProfile) return state
+          return { activeProfile: { ...state.activeProfile, ...patch } }
+        }),
 
       addCoins: (amount) =>
         set((state) => {

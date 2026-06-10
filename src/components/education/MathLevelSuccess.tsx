@@ -1,6 +1,8 @@
+import { useEffect } from 'react'
 import redFlower from '../../img/coding/obstacles/mollasson/red_flower.png'
 import orangeFlower from '../../img/coding/obstacles/mollasson/orange_flower.png'
 import { starLabel } from '../../education/utils/mathStars'
+import { playCongrats } from '../../lib/audioClips'
 
 interface MathLevelSuccessProps {
   title: string
@@ -8,6 +10,8 @@ interface MathLevelSuccessProps {
   total: number
   stars: 1 | 2 | 3
   coinsAwarded: number
+  packAwarded?: boolean
+  packLabel?: string
   onReplay: () => void
   onContinue: () => void
 }
@@ -18,9 +22,15 @@ export default function MathLevelSuccess({
   total,
   stars,
   coinsAwarded,
+  packAwarded = false,
+  packLabel = 'pack',
   onReplay,
   onContinue,
 }: MathLevelSuccessProps) {
+  useEffect(() => {
+    void playCongrats()
+  }, [])
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-4">
       <div className="relative max-w-sm w-full rounded-3xl bg-white px-6 py-8 text-center shadow-2xl">
@@ -57,14 +67,24 @@ export default function MathLevelSuccess({
         <p className="text-3xl mb-3" aria-label={`${stars} étoiles`}>
           {starLabel(stars)}
         </p>
-        {coinsAwarded > 0 && (
-          <div className="inline-flex items-center gap-1.5 rounded-full border-2 border-amber-400 bg-amber-50 px-4 py-1.5 text-lg font-bold text-amber-700 mb-5">
-            <span>+{coinsAwarded}</span>
-            <span className="text-xl leading-none" aria-hidden>
-              🪙
-            </span>
-          </div>
-        )}
+        <div className="flex flex-col items-center gap-2 mb-5">
+          {coinsAwarded > 0 && (
+            <div className="inline-flex items-center gap-1.5 rounded-full border-2 border-amber-400 bg-amber-50 px-4 py-1.5 text-lg font-bold text-amber-700">
+              <span>+{coinsAwarded}</span>
+              <span className="text-xl leading-none" aria-hidden>
+                🪙
+              </span>
+            </div>
+          )}
+          {packAwarded && (
+            <div className="inline-flex items-center gap-1.5 rounded-full border-2 border-orange-400 bg-orange-50 px-4 py-1.5 text-lg font-bold text-orange-800">
+              <span>+1 {packLabel}</span>
+              <span className="text-xl leading-none" aria-hidden>
+                📦
+              </span>
+            </div>
+          )}
+        </div>
         <div className="flex flex-col gap-2 sm:flex-row sm:gap-3">
           <button
             type="button"
