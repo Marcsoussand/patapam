@@ -24,3 +24,23 @@ export async function awardProfileCoins(
   }
   return true
 }
+
+export async function spendProfileCoins(
+  profileId: string,
+  currentCoins: number,
+  amount: number,
+): Promise<boolean> {
+  if (amount <= 0) return true
+  if (currentCoins < amount) return false
+
+  const { error } = await supabase
+    .from('profiles')
+    .update({ coins: currentCoins - amount })
+    .eq('id', profileId)
+
+  if (error) {
+    console.error('spendProfileCoins', error)
+    return false
+  }
+  return true
+}

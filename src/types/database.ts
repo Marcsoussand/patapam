@@ -207,6 +207,7 @@ export type Database = {
           name_en: string
           name_fr: string
           name_he: string
+          article_fr: string
           storage_path: string
         }
         Insert: {
@@ -219,6 +220,7 @@ export type Database = {
           name_en: string
           name_fr: string
           name_he: string
+          article_fr: string
           storage_path: string
         }
         Update: {
@@ -231,6 +233,7 @@ export type Database = {
           name_en?: string
           name_fr?: string
           name_he?: string
+          article_fr?: string
           storage_path?: string
         }
         Relationships: []

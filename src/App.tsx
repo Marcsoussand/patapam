@@ -14,10 +14,12 @@ import ZoneBobby from './pages/zones/ZoneBobby'
 import Cabin from './pages/Cabin'
 import Games from './pages/Games'
 import Collection from './pages/Collection'
+import Market from './pages/Market'
 import Library from './pages/Library'
 import Beach from './pages/Beach'
 import Education from './pages/Education'
-import FlagsGame from './pages/education/FlagsGame'
+import FlagsMap from './pages/education/FlagsMap'
+import FlagsLevel from './pages/education/FlagsLevel'
 import MathMap from './pages/education/MathMap'
 import MathLevel from './pages/education/MathLevel'
 import ParentDashboard from './pages/ParentDashboard'
@@ -81,6 +83,9 @@ export default function App() {
         <Route path="/collection" element={
           <RequireAuth><RequireProfile><Collection /></RequireProfile></RequireAuth>
         } />
+        <Route path="/market" element={
+          <RequireAuth><RequireProfile><Market /></RequireProfile></RequireAuth>
+        } />
         <Route path="/library" element={
           <RequireAuth><RequireProfile><Library /></RequireProfile></RequireAuth>
         } />
@@ -100,7 +105,10 @@ export default function App() {
           <RequireAuth><RequireProfile><MathLevel /></RequireProfile></RequireAuth>
         } />
         <Route path="/education/flags" element={
-          <RequireAuth><RequireProfile><FlagsGame /></RequireProfile></RequireAuth>
+          <RequireAuth><RequireProfile><FlagsMap /></RequireProfile></RequireAuth>
+        } />
+        <Route path="/education/flags/:levelNum" element={
+          <RequireAuth><RequireProfile><FlagsLevel /></RequireProfile></RequireAuth>
         } />
         <Route path="/parent" element={
           <RequireAuth><ParentDashboard /></RequireAuth>

@@ -1,11 +1,12 @@
 import i18n from '../i18n'
 import type { AppLocale, AudioClip, AudioClipCategory } from '../types/audio'
 import { patapamAudioPublicUrl } from './patapamAudioStorage'
+import { playSfx, stopPatapamAudio } from './patapamAudio'
 import { supabase } from './supabase'
 
 const clipCache = new Map<string, AudioClip[]>()
 
-let playingAudio: HTMLAudioElement | null = null
+export { stopPatapamAudio }
 
 export function currentAppLocale(): AppLocale {
   const lng = i18n.language?.slice(0, 2)
@@ -17,24 +18,8 @@ function cacheKey(category: AudioClipCategory, locale: AppLocale): string {
   return `${category}:${locale}`
 }
 
-export function stopPatapamAudio(): void {
-  if (playingAudio) {
-    playingAudio.pause()
-    playingAudio = null
-  }
-}
-
 export async function playPatapamAudioUrl(url: string): Promise<HTMLAudioElement | null> {
-  stopPatapamAudio()
-  const audio = new Audio(url)
-  playingAudio = audio
-  try {
-    await audio.play()
-    return audio
-  } catch {
-    playingAudio = null
-    return null
-  }
+  return playSfx(url)
 }
 
 export async function loadAudioClips(
@@ -115,4 +100,10 @@ export async function playMathPrompt(
   locale: AppLocale = currentAppLocale(),
 ): Promise<HTMLAudioElement | null> {
   return playAudioClip(mode === 'max' ? 'plus_grand' : 'plus_petit', 'math_prompt', locale)
+}
+
+export async function playFlagsPrompt(
+  locale: AppLocale = currentAppLocale(),
+): Promise<HTMLAudioElement | null> {
+  return playAudioClip('quel_drapeau', 'flags_prompt', locale)
 }

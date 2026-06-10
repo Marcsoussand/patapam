@@ -1,0 +1,138 @@
+-- ============================================================
+-- Ajouter l'audio d'un mot cartons (après upload Storage)
+-- ============================================================
+--
+-- Ordre :
+--   1. Uploader le(s) M4A dans le bucket
+--   2. Exécuter la section adaptée ci-dessous (SQL Editor ou migration)
+--
+-- Chemins Storage :
+--   patapam-audio (vocab partagé) :
+--     shared/{locale}/vocab/young/{category}/{slug}.m4a
+--     shared/{locale}/vocab/young/{category}/whereis/whereis_{slug}.m4a
+--   patapam-voice (famille) :
+--     {parent_uuid}/vocab/{locale}/famille/papa.m4a
+--     {parent_uuid}/vocab/{locale}/famille/maman.m4a
+--     {parent_uuid}/vocab/{locale}/famille/{profile_slug}.m4a
+--
+-- Catalogue (carton_words) : déjà seedé pour le vocab jeune.
+-- Nouveau mot hors seed → section A puis B.
+--
+-- Pour versionner : copier vers
+--   supabase/migrations/YYYYMMDD_carton_word_<id>.sql
+
+-- ------------------------------------------------------------------
+-- A) Nouveau mot dans le catalogue (optionnel si id déjà seedé)
+-- ------------------------------------------------------------------
+-- INSERT INTO carton_words (
+--   id, category, slot_type, label_fr, label_en, label_he, slug, age_group, sort_order
+-- ) VALUES (
+--   'corps_nez',           -- {category}_{slug}
+--   'corps',               -- famille | corps | animaux | jouets | nourriture
+--   'shared',              -- shared | family | profile
+--   'nez', 'Nose', 'אף',   -- libellés affichés
+--   'nez',                 -- nom fichier (sans .m4a)
+--   'young',
+--   6
+-- )
+-- ON CONFLICT (id) DO UPDATE SET
+--   label_fr = EXCLUDED.label_fr,
+--   label_en = EXCLUDED.label_en,
+--   label_he = EXCLUDED.label_he,
+--   sort_order = EXCLUDED.sort_order,
+--   is_active = true;
+
+-- ------------------------------------------------------------------
+-- B1) Mot partagé — prononciation (patapam-audio)
+-- ------------------------------------------------------------------
+-- INSERT INTO carton_word_audio (
+--   word_id, locale, audio_kind, storage_bucket, storage_path
+-- ) VALUES (
+--   'corps_tete',
+--   'fr',
+--   'word',
+--   'patapam-audio',
+--   'shared/fr/vocab/young/corps/tete.m4a'
+-- )
+-- ON CONFLICT (word_id, locale, audio_kind) WHERE parent_id IS NULL AND profile_id IS NULL DO UPDATE SET
+--   storage_path = EXCLUDED.storage_path,
+--   is_active = true;
+
+-- ------------------------------------------------------------------
+-- B2) Mot partagé — variante « Chercher » / whereis (optionnel)
+-- ------------------------------------------------------------------
+-- INSERT INTO carton_word_audio (
+--   word_id, locale, audio_kind, storage_bucket, storage_path
+-- ) VALUES (
+--   'corps_tete',
+--   'fr',
+--   'whereis',
+--   'patapam-audio',
+--   'shared/fr/vocab/young/corps/whereis/whereis_tete.m4a'
+-- )
+-- ON CONFLICT (word_id, locale, audio_kind) WHERE parent_id IS NULL AND profile_id IS NULL DO UPDATE SET
+--   storage_path = EXCLUDED.storage_path,
+--   is_active = true;
+
+-- ------------------------------------------------------------------
+-- C1) Famille — papa ou maman (patapam-voice, par parent)
+-- ------------------------------------------------------------------
+-- INSERT INTO carton_word_audio (
+--   word_id, locale, audio_kind, storage_bucket, storage_path, parent_id
+-- ) VALUES (
+--   'famille_papa',
+--   'fr',
+--   'word',
+--   'patapam-voice',
+--   'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee/vocab/fr/famille/papa.m4a',
+--   'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'::uuid
+-- )
+-- ON CONFLICT (word_id, locale, audio_kind, parent_id) WHERE parent_id IS NOT NULL AND profile_id IS NULL DO UPDATE SET
+--   storage_path = EXCLUDED.storage_path,
+--   is_active = true;
+
+-- ------------------------------------------------------------------
+-- C2) Famille — prénom enfant (patapam-voice, lié au profil)
+-- word_id = id stable dérivé du prénom : famille_{slug}
+-- ------------------------------------------------------------------
+-- INSERT INTO carton_words (
+--   id, category, slot_type, label_fr, label_en, label_he, slug, age_group, sort_order
+-- ) VALUES (
+--   'famille_aaron',
+--   'famille',
+--   'profile',
+--   'Aaron', 'Aaron', 'אהרון',
+--   'aaron',
+--   'young',
+--   3
+-- )
+-- ON CONFLICT (id) DO UPDATE SET
+--   label_fr = EXCLUDED.label_fr,
+--   label_en = EXCLUDED.label_en,
+--   label_he = EXCLUDED.label_he,
+--   is_active = true;
+
+-- INSERT INTO carton_word_audio (
+--   word_id, locale, audio_kind, storage_bucket, storage_path, parent_id, profile_id
+-- ) VALUES (
+--   'famille_aaron',
+--   'fr',
+--   'word',
+--   'patapam-voice',
+--   'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee/vocab/fr/famille/aaron.m4a',
+--   'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'::uuid,
+--   '11111111-2222-3333-4444-555555555555'::uuid
+-- )
+-- ON CONFLICT (word_id, locale, audio_kind, profile_id) WHERE profile_id IS NOT NULL DO UPDATE SET
+--   storage_path = EXCLUDED.storage_path,
+--   is_active = true;
+
+-- ------------------------------------------------------------------
+-- D) Exemple complet : corps_tete FR (word + whereis)
+-- ------------------------------------------------------------------
+-- INSERT INTO carton_word_audio (word_id, locale, audio_kind, storage_bucket, storage_path) VALUES
+--   ('corps_tete', 'fr', 'word',    'patapam-audio', 'shared/fr/vocab/young/corps/tete.m4a'),
+--   ('corps_tete', 'fr', 'whereis', 'patapam-audio', 'shared/fr/vocab/young/corps/whereis/whereis_tete.m4a')
+-- ON CONFLICT (word_id, locale, audio_kind) WHERE parent_id IS NULL AND profile_id IS NULL DO UPDATE SET
+--   storage_path = EXCLUDED.storage_path,
+--   is_active = true;

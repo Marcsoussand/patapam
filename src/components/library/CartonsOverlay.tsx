@@ -12,7 +12,8 @@ import {
   type CardWord,
   type CategoryKey,
 } from '../../data/cartons'
-import { playCongrats, stopPatapamAudio } from '../../lib/audioClips'
+import { playCongrats } from '../../lib/audioClips'
+import { playSfx, stopSfx } from '../../lib/patapamAudio'
 import './cartons.css'
 
 type SetupScreen = 'age' | 'category' | 'mode'
@@ -157,7 +158,6 @@ export default function CartonsOverlay({ open, onClose }: CartonsOverlayProps) {
   const [findFeedback, setFindFeedback] = useState<Record<string, 'correct' | 'wrong'>>({})
 
   const learnWordRef = useRef<HTMLDivElement>(null)
-  const audioRef = useRef<HTMLAudioElement | null>(null)
   const learnTimersRef = useRef<ReturnType<typeof setTimeout>[]>([])
 
   const category = categoryKey ? getCategory(categoryKey) : undefined
@@ -175,11 +175,7 @@ export default function CartonsOverlay({ open, onClose }: CartonsOverlayProps) {
   )
 
   const stopAudio = useCallback(() => {
-    if (audioRef.current) {
-      audioRef.current.pause()
-      audioRef.current = null
-    }
-    stopPatapamAudio()
+    stopSfx()
   }, [])
 
   const clearLearnTimers = useCallback(() => {
@@ -238,9 +234,7 @@ export default function CartonsOverlay({ open, onClose }: CartonsOverlayProps) {
       setFindFeedback({})
 
       stopAudio()
-      const audio = new Audio(whereisAudio(correct.audio))
-      audioRef.current = audio
-      audio.play().catch(() => {})
+      void playSfx(whereisAudio(correct.audio))
     },
     [category, exitCardMode, stopAudio],
   )
@@ -261,9 +255,7 @@ export default function CartonsOverlay({ open, onClose }: CartonsOverlayProps) {
 
     const word = category.words[learnIndex]
     stopAudio()
-    const audio = new Audio(word.audio)
-    audioRef.current = audio
-    audio.play().catch(() => {})
+    void playSfx(word.audio)
 
     const hideTimer = setTimeout(() => {
       setLearnWordVisible(false)
@@ -312,7 +304,6 @@ export default function CartonsOverlay({ open, onClose }: CartonsOverlayProps) {
           advance()
           return
         }
-        audioRef.current = snd
         snd.addEventListener('ended', advance, { once: true })
         setTimeout(() => {
           if (!snd.ended) {

@@ -10,6 +10,7 @@ import {
   loadCodingProgress,
   saveCodingProgress,
   maxUnlockedLevelIndex,
+  highestCompletedLevelIndex,
   type CodingProgressMap,
 } from '../lib/codingProgress'
 import { useProfileStore } from '../store/profileStore'
@@ -235,6 +236,7 @@ export default function CodingGame({ profileId, onClose }: CodingGameProps) {
   }, [profileId])
 
   const maxUnlocked = maxUnlockedLevelIndex(MOLLASSON_LEVELS, 'mollasson', progress)
+  const suggestedLevel = highestCompletedLevelIndex(MOLLASSON_LEVELS, 'mollasson', progress)
 
   const handleProgressUpdate = useCallback((map: CodingProgressMap) => {
     setProgress(map)
@@ -250,7 +252,11 @@ export default function CodingGame({ profileId, onClose }: CodingGameProps) {
   }
 
   return (
-    <GameProvider levels={MOLLASSON_LEVELS} maxUnlockedIndex={maxUnlocked}>
+    <GameProvider
+      levels={MOLLASSON_LEVELS}
+      maxUnlockedIndex={maxUnlocked}
+      initialLevelIndex={suggestedLevel}
+    >
       <GameScreen
         profileId={profileId}
         progress={progress}

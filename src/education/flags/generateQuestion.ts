@@ -27,3 +27,35 @@ export function generateFlagQuestion(
     choices: shuffle([promptCountry, ...distractors]),
   }
 }
+
+/** Série finie : une question par pays du pool (ordre mélangé). */
+export function generateFlagQuestionSequence(
+  countries: FlagCountry[],
+  questionCount: number,
+  choiceCount: number,
+): FlagQuestion[] {
+  if (countries.length < choiceCount || questionCount < 1) return []
+
+  const pool = countries.slice(0, Math.min(questionCount, countries.length))
+  if (pool.length < choiceCount) return []
+
+  return shuffle(pool).map((promptCountry) => {
+    let distractors = shuffle(pool.filter((c) => c.id !== promptCountry.id)).slice(
+      0,
+      choiceCount - 1,
+    )
+
+    if (distractors.length < choiceCount - 1) {
+      const extra = shuffle(countries.filter((c) => c.id !== promptCountry.id)).slice(
+        0,
+        choiceCount - 1 - distractors.length,
+      )
+      distractors = [...distractors, ...extra]
+    }
+
+    return {
+      promptCountry,
+      choices: shuffle([promptCountry, ...distractors]),
+    }
+  })
+}

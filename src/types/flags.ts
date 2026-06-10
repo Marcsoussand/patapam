@@ -3,6 +3,8 @@ export interface FlagCountry {
   name_fr: string
   name_en: string
   name_he: string
+  /** Préposition + article : de la , du , de l', des , d' */
+  article_fr: string
   storage_path: string
   audio_path_fr: string | null
   audio_path_en: string | null

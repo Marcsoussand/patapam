@@ -240,12 +240,22 @@ export default function ProfileSelect() {
         )}
       </div>
 
-      <button
-        onClick={() => supabase.auth.signOut().then(() => navigate('/login'))}
-        className="text-white underline text-sm opacity-70 hover:opacity-100"
-      >
-        Se déconnecter
-      </button>
+      <div className="flex flex-col items-center gap-3">
+        <button
+          type="button"
+          onClick={() => navigate('/parent')}
+          className="text-white/80 text-sm font-medium underline-offset-2 hover:underline hover:text-white"
+        >
+          Gestion du compte
+        </button>
+
+        <button
+          onClick={() => supabase.auth.signOut().then(() => navigate('/login'))}
+          className="text-white underline text-sm opacity-70 hover:opacity-100"
+        >
+          Se déconnecter
+        </button>
+      </div>
 
       {showModal && (
         <AddProfileModal

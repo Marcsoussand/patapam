@@ -1,7 +1,9 @@
-import { useEffect, useState, type CSSProperties } from 'react'
+import { useEffect, useState, useMemo, type CSSProperties } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useProfileStore } from '../store/profileStore'
 import { supabase } from '../lib/supabase'
+import { clearingBgmUrl } from '../lib/clearingMusic'
+import { usePageMusic } from '../hooks/usePageMusic'
 import patapamImg from '../img/patapam_debout.png'
 import clairiereImg from '../img/patapam_clairiere.png'
 import dauphinou from '../img/dauphinou.png'
@@ -85,6 +87,9 @@ export default function Clearing() {
 
   const avatarImg = charName ? characterImages[charName] : null
 
+  const bgmUrl = useMemo(() => clearingBgmUrl(), [])
+  usePageMusic(bgmUrl)
+
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-patapam-green">
       {/* Header */}
@@ -147,7 +152,7 @@ export default function Clearing() {
           {/* Zones cliquables */}
           <ClearingPanel
             onClick={() => navigate('/education')}
-            style={{ position: 'absolute', top: '0%', left: '0%', width: '33.33%', height: '33.33%' }}
+            style={{ position: 'absolute', top: '0%', left: '0%', width: '33%', height: '40%' }}
             label="🎓 Éducation"
           />
           <ClearingPanel
@@ -169,6 +174,11 @@ export default function Clearing() {
             onClick={() => navigate('/cabin')}
             style={{ position: 'absolute', top: '0%', left: '70%', width: '30%', height: '50%' }}
             label="🏠 La Cabane"
+          />
+          <ClearingPanel
+            onClick={() => navigate('/market')}
+            style={{ position: 'absolute', top: '66%', left: '66%', width: '34%', height: '34%' }}
+            label="🛒 Marché"
           />
         </div>
       </div>
