@@ -82,7 +82,6 @@ export default function Grid() {
               cell === 'palm_tree' &&
               grid[rowIdx - 1]?.[colIdx] !== 'palm_tree' &&
               grid[rowIdx][colIdx - 1] !== 'palm_tree'
-            if (cell === 'palm_tree' && !isPalmAnchor) return null
 
             const isHero = heroPos.row === rowIdx && heroPos.col === colIdx
             const isEnd = cell === 'end'
@@ -106,14 +105,18 @@ export default function Grid() {
                   position: 'absolute',
                   left: colIdx * SIDE_W,
                   top: rowIdx * SIDE_H,
-                  width: isPalmAnchor ? SIDE_W * 2 : SIDE_W,
-                  height: isPalmAnchor ? SIDE_H * 2 : SIDE_H,
+                  width: SIDE_W,
+                  height: SIDE_H,
                 }}
               >
                 {isPalmAnchor && (
-                  <img src={palmTree} alt="" className="coding-obstacle-img coding-palm-tree" />
+                  <img
+                    src={palmTree}
+                    alt=""
+                    className="coding-obstacle-img coding-palm-tree coding-palm-tree--overlay"
+                  />
                 )}
-                {obstacleImg && !isPalmAnchor && (
+                {obstacleImg && (
                   <img src={obstacleImg} alt="" className="coding-obstacle-img" />
                 )}
                 {isEnd && !isHero && <span className="coding-end-flag">🏆</span>}
