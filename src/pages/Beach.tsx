@@ -47,6 +47,7 @@ export default function Beach() {
   const profile = useProfileStore((s) => s.activeProfile)
   const [charName, setCharName] = useState<string | null>(null)
   const [mollassonOpen, setMollassonOpen] = useState(false)
+  const [dauphinouOpen, setDauphinouOpen] = useState(false)
 
   useEffect(() => {
     if (!profile?.character_id) return
@@ -105,9 +106,9 @@ export default function Beach() {
           />
 
           <BeachPanel
-            onClick={() => window.alert('Codage Dauphinou — bientôt disponible !')}
+            onClick={() => setDauphinouOpen(true)}
             style={{ top: '50%', left: '0%', width: '55%', height: '45%' }}
-            label="🐬 Codage — Dauphinou (bientôt)"
+            label="🐬 Codage — Dauphinou"
           />
           <BeachPanel
             onClick={() => setMollassonOpen(true)}
@@ -123,7 +124,10 @@ export default function Beach() {
       </div>
 
       {mollassonOpen && profile && (
-        <CodingGame profileId={profile.id} onClose={() => setMollassonOpen(false)} />
+        <CodingGame profileId={profile.id} onClose={() => setMollassonOpen(false)} hero="mollasson" />
+      )}
+      {dauphinouOpen && profile && (
+        <CodingGame profileId={profile.id} onClose={() => setDauphinouOpen(false)} hero="dauphinou" />
       )}
     </div>
   )

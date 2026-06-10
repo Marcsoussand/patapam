@@ -4,6 +4,9 @@ import { useProfileStore, type ChildProfile } from '../store/profileStore'
 import { supabase } from '../lib/supabase'
 import { usePageMusic } from '../hooks/usePageMusic'
 import { zoneBgmUrl } from '../lib/zoneMusic'
+import GameRulesInfoButton from '../components/games/GameRulesInfoButton'
+import GameRulesPopup from '../components/games/GameRulesPopup'
+import { TREASURE_HUNT_RULES } from '../games/treasureHuntRules'
 import gamesAreaImg from '../img/games_area.png'
 import ticTacToeImg from '../img/games/tic_tac_toe.png'
 import memoryImg from '../img/games/memory.png'
@@ -71,6 +74,12 @@ const MEMORY_LEVELS = [
   { level: 5, cards: 24 },
   { level: 6, cards: 30 },
 ]
+
+/** Délai avant de retourner les cartes non appariées (laisse le temps aux images de s'afficher). */
+const MEMORY_MISMATCH_HIDE_DELAY_MS = 2_000
+
+/** Délai fin de tour chasse au trésor (ramassage ou bust) avant de cacher les cartes restées ouvertes. */
+const TREASURE_TURN_END_DELAY_MS = 2_000
 
 const PATAPAM_COLLECTION_IMAGES = Object.values(
   import.meta.glob('../img/patapam_collection/*.{png,jpg,jpeg,webp}', {
@@ -163,6 +172,7 @@ export default function Games() {
   const [treasureGameOver, setTreasureGameOver] = useState(false)
   const [treasureWinner, setTreasureWinner] = useState<0 | 1 | null>(null)
   const [treasureMessage, setTreasureMessage] = useState('')
+  const [showTreasureRules, setShowTreasureRules] = useState(false)
   const aiTimeoutRef = useRef<number | null>(null)
   const memoryTimeoutRef = useRef<number | null>(null)
   const treasureTimeoutRef = useRef<number | null>(null)
@@ -572,7 +582,7 @@ export default function Games() {
       setFlippedMemoryCards([])
       setIsMemoryLocked(false)
       memoryTimeoutRef.current = null
-    }, 700)
+    }, MEMORY_MISMATCH_HIDE_DELAY_MS)
   }
 
   function getTreasureCollectableIndices(tiles: TreasureTile[]) {
@@ -637,7 +647,28 @@ export default function Games() {
       endTreasureTurn(nextPlayer)
       setIsTreasureLocked(false)
       treasureTimeoutRef.current = null
-    }, 600)
+    }, TREASURE_TURN_END_DELAY_MS)
+  }
+
+  function handleTreasureCollect() {
+    if (selectedGame !== 'treasure' || gamePhase !== 'play' || treasureGameOver || isTreasureLocked) return
+
+    const collectable = getTreasureCollectableIndices(treasureTiles)
+    if (collectable.length === 0) return
+
+    setIsTreasureLocked(true)
+    setTreasureMessage('Ramasse!')
+
+    treasureTimeoutRef.current = window.setTimeout(() => {
+      setTreasureTiles((prev) => prev.map((tile, index) => (
+        collectable.includes(index) ? { ...tile, collectedBy: currentTreasurePlayer, revealed: false } : tile
+      )))
+
+      const nextPlayer: 0 | 1 = currentTreasurePlayer === 0 ? 1 : 0
+      endTreasureTurn(nextPlayer)
+      setIsTreasureLocked(false)
+      treasureTimeoutRef.current = null
+    }, TREASURE_TURN_END_DELAY_MS)
   }
 
   function handleTreasureCardClick(index: number) {
@@ -728,20 +759,6 @@ export default function Games() {
     }
 
     setTreasureMessage('L\'IA continue ou ramasse.')
-  }
-
-  function handleTreasureCollect() {
-    if (selectedGame !== 'treasure' || gamePhase !== 'play' || treasureGameOver || isTreasureLocked) return
-
-    const collectable = getTreasureCollectableIndices(treasureTiles)
-    if (collectable.length === 0) return
-
-    setTreasureTiles((prev) => prev.map((tile, index) => (
-      collectable.includes(index) ? { ...tile, collectedBy: currentTreasurePlayer, revealed: false } : tile
-    )))
-
-    const nextPlayer: 0 | 1 = currentTreasurePlayer === 0 ? 1 : 0
-    endTreasureTurn(nextPlayer)
   }
 
   function bestMove(cells: Cell[], aiMark: 'O' | 'X', humanMark: 'X' | 'O') {
@@ -1208,6 +1225,7 @@ export default function Games() {
                 resetMemory()
                 resetTreasureHunt()
                 setTreasureSelectStep('mode')
+                setShowTreasureRules(false)
                 setSelectedGame(null)
               }}
               aria-label="Fermer"
@@ -1219,7 +1237,14 @@ export default function Games() {
               </svg>
             </button>
 
-            <h1 className="text-3xl font-bold mb-4">{selectedTitle}</h1>
+            {selectedGame === 'treasure' ? (
+              <div className="game-rules-title-row">
+                <h1 className="text-3xl font-bold m-0">Chasse au trésor</h1>
+                <GameRulesInfoButton legend="" onClick={() => setShowTreasureRules(true)} />
+              </div>
+            ) : (
+              <h1 className="text-3xl font-bold mb-4">{selectedTitle}</h1>
+            )}
 
             {selectedGame === 'tictactoe' && gamePhase === 'select' && (
               <div className="h-[calc(100%-4rem)] flex flex-col justify-center gap-6">
@@ -1463,7 +1488,10 @@ export default function Games() {
             {selectedGame === 'treasure' && gamePhase === 'select' && (
               <div className="h-[calc(100%-4rem)] flex items-center justify-center">
                 <div className="bg-white/15 border border-white/20 rounded-2xl p-8 flex flex-col items-center gap-5 max-w-6xl w-full">
-                  <img src={treasureHuntImg} alt="Chasse au Tresor" className="w-36 h-36 object-contain" />
+                <div className="game-rules-select-header">
+                  <img src={treasureHuntImg} alt="Chasse au trésor" className="w-36 h-36 object-contain" />
+                  <GameRulesInfoButton onClick={() => setShowTreasureRules(true)} />
+                </div>
                   {treasureSelectStep === 'mode' && (
                     <>
                       <h2 className="text-3xl font-black text-white">Choisir un type de partie</h2>
@@ -1728,6 +1756,14 @@ export default function Games() {
             )}
           </div>
         </div>
+      )}
+
+      {showTreasureRules && (
+        <GameRulesPopup
+          title={TREASURE_HUNT_RULES.title}
+          html={TREASURE_HUNT_RULES.html}
+          onClose={() => setShowTreasureRules(false)}
+        />
       )}
     </div>
   )

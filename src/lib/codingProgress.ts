@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase'
-import { codingLevelKey } from '../coding/data/mollassonLevels'
+import { codingLevelKey } from '../coding/data/codingLevelKey'
 
 const MODULE = 'coding'
 
@@ -52,12 +52,13 @@ export function highestCompletedLevelIndex(
 
 /** Index max débloqué (strict) : niveau 0 toujours ouvert, N+1 si N complété (stars >= 1). */
 export function maxUnlockedLevelIndex(
-  levels: { id: string }[],
+  levels: { id: string; comingSoon?: boolean }[],
   hero: string,
   progress: CodingProgressMap,
 ): number {
   let max = 0
   for (let i = 0; i < levels.length - 1; i++) {
+    if (levels[i + 1]?.comingSoon) break
     const key = codingLevelKey(hero, levels[i].id)
     if ((progress[key] ?? 0) >= 1) {
       max = i + 1

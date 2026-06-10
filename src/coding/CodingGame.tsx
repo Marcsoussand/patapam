@@ -1,7 +1,9 @@
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import { GameProvider, useGame } from './context/GameContext'
-import { MOLLASSON_LEVELS, codingLevelKey } from './data/mollassonLevels'
-import type { CellType } from './types/game'
+import { MOLLASSON_LEVELS } from './data/mollassonLevels'
+import { DAUPHINOU_LEVELS, lastPlayableLevelIndex } from './data/dauphinouLevels'
+import { codingLevelKey } from './data/codingLevelKey'
+import type { CellType, HeroId, Level } from './types/game'
 import Grid from './components/Grid'
 import ActionPanel from './components/ActionPanel'
 import Sequencer from './components/Sequencer'
@@ -26,9 +28,26 @@ const KEY_CELL_COLOR: Partial<Record<CellType, string>> = {
 const KEY_ICONS: Record<string, string> = { red: '🔑', yellow: '🗝️' }
 const CODING_VICTORY_COINS = 3
 
+const HERO_CONFIG: Record<
+  HeroId,
+  { levels: Level[]; heroName: string; themeClass: string }
+> = {
+  mollasson: {
+    levels: MOLLASSON_LEVELS,
+    heroName: 'Mollasson',
+    themeClass: 'coding-game--forest',
+  },
+  dauphinou: {
+    levels: DAUPHINOU_LEVELS,
+    heroName: 'Dauphinou',
+    themeClass: 'coding-game--sea',
+  },
+}
+
 interface CodingGameProps {
   profileId: string
   onClose: () => void
+  hero?: HeroId
 }
 
 function GameScreen({
@@ -36,13 +55,19 @@ function GameScreen({
   progress,
   onProgressUpdate,
   onClose,
+  levels,
+  heroName,
+  themeClass,
 }: {
   profileId: string
   progress: CodingProgressMap
   onProgressUpdate: (map: CodingProgressMap) => void
   onClose: () => void
+  levels: Level[]
+  heroName: string
+  themeClass: string
 }) {
-  const { state, dispatch, currentLevel, isLastLevel, maxUnlockedIndex } = useGame()
+  const { state, dispatch, currentLevel, maxUnlockedIndex } = useGame()
   const { status, executionIndex, currentLevelIndex, collectedKeys } = state
   const { grid, hero, title, description } = currentLevel
   const activeProfile = useProfileStore((s) => s.activeProfile)
@@ -50,6 +75,9 @@ function GameScreen({
   const [rewardCoins, setRewardCoins] = useState(0)
   const coinsAwardedRef = useRef(false)
   const congratsPlayedRef = useRef(false)
+
+  const lastPlayableIndex = useMemo(() => lastPlayableLevelIndex(levels), [levels])
+  const isLastPlayableLevel = currentLevelIndex >= lastPlayableIndex
 
   const keyTypes = [
     ...new Set(
@@ -108,16 +136,16 @@ function GameScreen({
   }, [status, hero, currentLevel.id, profileId, progress, onProgressUpdate])
 
   return (
-    <div className="coding-game">
+    <div className={`coding-game ${themeClass}`}>
       <ExitButton onClick={onClose} />
 
       <main className="coding-game-layout">
         <header className="coding-game-header">
           <div className="coding-level-progress-bar">
-            {MOLLASSON_LEVELS.map((lvl, idx) => {
+            {levels.map((lvl, idx) => {
               const isActive = idx === currentLevelIndex
               const isPast = idx < currentLevelIndex
-              const isLocked = idx > maxUnlockedIndex
+              const isLocked = idx > maxUnlockedIndex || !!lvl.comingSoon
               return (
                 <div key={lvl.id} className="coding-level-progress-item">
                   <button
@@ -138,7 +166,7 @@ function GameScreen({
                   >
                     {idx + 1}
                   </button>
-                  {idx < MOLLASSON_LEVELS.length - 1 && (
+                  {idx < levels.length - 1 && (
                     <span className={`coding-level-arrow ${isPast ? 'coding-level-arrow--past' : ''}`}>
                       ›
                     </span>
@@ -187,7 +215,7 @@ function GameScreen({
         <div className="coding-success-overlay">
           <div className="coding-success-modal">
             <div className="coding-success-emoji">🎉</div>
-            <div className="coding-success-title">Bravo ! Mollasson a réussi !</div>
+            <div className="coding-success-title">Bravo ! {heroName} a réussi !</div>
             <div className="coding-success-stars">★★★</div>
             {rewardCoins > 0 && (
               <div className="coding-success-coins">
@@ -197,7 +225,7 @@ function GameScreen({
                 </span>
               </div>
             )}
-            {!isLastLevel ? (
+            {!isLastPlayableLevel ? (
               <button
                 type="button"
                 className="coding-btn-next"
@@ -206,7 +234,9 @@ function GameScreen({
                 Niveau suivant →
               </button>
             ) : (
-              <p className="coding-success-complete">Tu as terminé tous les niveaux de Mollasson !</p>
+              <p className="coding-success-complete">
+                Tu as terminé tous les niveaux disponibles de {heroName} !
+              </p>
             )}
             <button type="button" className="coding-btn-reset-sm" onClick={() => dispatch({ type: 'RESET' })}>
               Rejouer
@@ -218,7 +248,8 @@ function GameScreen({
   )
 }
 
-export default function CodingGame({ profileId, onClose }: CodingGameProps) {
+export default function CodingGame({ profileId, onClose, hero = 'mollasson' }: CodingGameProps) {
+  const { levels, heroName, themeClass } = HERO_CONFIG[hero]
   const [progress, setProgress] = useState<CodingProgressMap>({})
   const [loading, setLoading] = useState(true)
 
@@ -235,8 +266,8 @@ export default function CodingGame({ profileId, onClose }: CodingGameProps) {
     }
   }, [profileId])
 
-  const maxUnlocked = maxUnlockedLevelIndex(MOLLASSON_LEVELS, 'mollasson', progress)
-  const suggestedLevel = highestCompletedLevelIndex(MOLLASSON_LEVELS, 'mollasson', progress)
+  const maxUnlocked = maxUnlockedLevelIndex(levels, hero, progress)
+  const suggestedLevel = highestCompletedLevelIndex(levels, hero, progress)
 
   const handleProgressUpdate = useCallback((map: CodingProgressMap) => {
     setProgress(map)
@@ -244,7 +275,7 @@ export default function CodingGame({ profileId, onClose }: CodingGameProps) {
 
   if (loading) {
     return (
-      <div className="coding-game coding-game--loading">
+      <div className={`coding-game coding-game--loading ${themeClass}`}>
         <ExitButton onClick={onClose} />
         <p>Chargement…</p>
       </div>
@@ -252,16 +283,15 @@ export default function CodingGame({ profileId, onClose }: CodingGameProps) {
   }
 
   return (
-    <GameProvider
-      levels={MOLLASSON_LEVELS}
-      maxUnlockedIndex={maxUnlocked}
-      initialLevelIndex={suggestedLevel}
-    >
+    <GameProvider levels={levels} maxUnlockedIndex={maxUnlocked} initialLevelIndex={suggestedLevel}>
       <GameScreen
         profileId={profileId}
         progress={progress}
         onProgressUpdate={handleProgressUpdate}
         onClose={onClose}
+        levels={levels}
+        heroName={heroName}
+        themeClass={themeClass}
       />
     </GameProvider>
   )
