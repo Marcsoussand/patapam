@@ -1,7 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useProfileStore } from '../store/profileStore'
 import { supabase } from '../lib/supabase'
+import { usePageMusic } from '../hooks/usePageMusic'
+import { zoneBgmUrl } from '../lib/zoneMusic'
 import patapamImg from '../img/patapam_debout.png'
 import educationImg from '../img/pages/education.png'
 import dauphinou from '../img/dauphinou.png'
@@ -36,6 +38,8 @@ export default function Education() {
   }, [profile?.character_id])
 
   const avatarImg = charName ? characterImages[charName] : null
+  const bgmUrl = useMemo(() => zoneBgmUrl('education'), [])
+  usePageMusic(bgmUrl)
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-patapam-purple">

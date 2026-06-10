@@ -23,6 +23,7 @@ export interface CabinItemCatalogEntry {
   height_pct: number
   floors: number[]
   sort_order: number
+  price_coins: number
 }
 
 export interface CabinInventoryEntry {

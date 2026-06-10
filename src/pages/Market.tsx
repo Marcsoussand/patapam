@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useProfileStore } from '../store/profileStore'
 import { supabase } from '../lib/supabase'
+import MarketOverlay from '../components/market/MarketOverlay'
 import patapamImg from '../img/patapam_debout.png'
 import marketImg from '../img/pages/market.png'
 import dauphinou from '../img/dauphinou.png'
@@ -22,7 +23,10 @@ const characterImages: Record<string, string> = {
 export default function Market() {
   const navigate = useNavigate()
   const profile = useProfileStore((s) => s.activeProfile)
+  const patchActiveProfile = useProfileStore((s) => s.patchActiveProfile)
   const [charName, setCharName] = useState<string | null>(null)
+  const [marketOpen, setMarketOpen] = useState(false)
+  const [coins, setCoins] = useState(0)
 
   useEffect(() => {
     if (!profile?.character_id) return
@@ -34,7 +38,16 @@ export default function Market() {
       .then(({ data }) => setCharName(data?.name_fr ?? null))
   }, [profile?.character_id])
 
+  useEffect(() => {
+    setCoins(profile?.coins ?? 0)
+  }, [profile?.coins])
+
   const avatarImg = charName ? characterImages[charName] : null
+
+  function handleCoinsChange(nextCoins: number) {
+    setCoins(nextCoins)
+    patchActiveProfile({ coins: nextCoins })
+  }
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-patapam-yellow">
@@ -60,7 +73,7 @@ export default function Market() {
 
         <div className="flex items-center gap-1 bg-white/20 rounded-full px-4 py-1">
           <span className="text-yellow-300 text-lg">🪙</span>
-          <span className="text-white font-bold">{profile?.coins ?? 0}</span>
+          <span className="text-white font-bold">{coins}</span>
         </div>
       </header>
 
@@ -91,14 +104,32 @@ export default function Market() {
             </span>
           </button>
 
-          <div className="absolute bottom-[12%] left-1/2 -translate-x-1/2 bg-black/55 text-white px-6 py-4 rounded-2xl text-center max-w-sm backdrop-blur-sm border border-white/20 pointer-events-none">
-            <p className="font-bold text-lg mb-1">Bientôt disponible</p>
-            <p className="text-sm text-white/85">
-              C&apos;est ici que tu pourras déposer tes pièces et échanger avec les marchands.
-            </p>
-          </div>
+          <button
+            type="button"
+            onClick={() => setMarketOpen(true)}
+            style={{ position: 'absolute', bottom: '0%', left: '25%', width: '50%', height: '50%' }}
+            className="group z-10 flex flex-col items-center justify-center gap-1 rounded-lg border-2 border-transparent hover:border-white/60 hover:bg-white/20 transition-all duration-200"
+            aria-label="Ouvrir le marchand"
+          >
+            <span className="text-3xl drop-shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200" aria-hidden>
+              🛒
+            </span>
+            <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-white font-bold text-sm drop-shadow-lg bg-black/40 px-2 py-1 rounded-lg">
+              Marchand
+            </span>
+          </button>
         </div>
       </div>
+
+      {marketOpen && profile && (
+        <MarketOverlay
+          profileId={profile.id}
+          coins={coins}
+          cabinLayout={profile.cabin_layout ?? {}}
+          onClose={() => setMarketOpen(false)}
+          onCoinsChange={handleCoinsChange}
+        />
+      )}
     </div>
   )
 }

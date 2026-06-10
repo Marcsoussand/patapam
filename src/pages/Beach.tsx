@@ -1,7 +1,9 @@
-import { useEffect, useState, type CSSProperties } from 'react'
+import { useEffect, useMemo, useState, type CSSProperties } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useProfileStore } from '../store/profileStore'
 import { supabase } from '../lib/supabase'
+import { usePageMusic } from '../hooks/usePageMusic'
+import { zoneBgmUrl } from '../lib/zoneMusic'
 import patapamImg from '../img/patapam_debout.png'
 import beachImg from '../img/pages/beach.png'
 import dauphinou from '../img/dauphinou.png'
@@ -57,6 +59,8 @@ export default function Beach() {
   }, [profile?.character_id])
 
   const avatarImg = charName ? characterImages[charName] : null
+  const bgmUrl = useMemo(() => zoneBgmUrl('beach'), [])
+  usePageMusic(bgmUrl)
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-patapam-blue">
