@@ -1,10 +1,14 @@
 import type { Language } from '../store/languageStore'
 
 export interface CardWord {
+  id: string
+  slug: string
   fr: string
   en: string
   he: string
-  audio: string
+  /** URL Supabase (mot partagé). Null pour famille multi-clip ou maman sans audio. */
+  learnAudioUrl?: string | null
+  whereisUrl?: string | null
 }
 
 export interface CartonCategory {
@@ -21,51 +25,51 @@ export const YOUNG_CATEGORIES: CartonCategory[] = [
   {
     key: 'famille',
     words: [
-      { fr: 'papa', en: 'Papa', he: 'אבא', audio: '/audio/young/famille/papa.m4a' },
-      { fr: 'maman', en: 'Maman', he: 'אמא', audio: '/audio/young/famille/maman.m4a' },
-      { fr: 'aaron', en: 'Aaron', he: 'אהרון', audio: '/audio/young/famille/aaron.m4a' },
-      { fr: 'naor', en: 'Naor', he: 'נאור', audio: '/audio/young/famille/naor.m4a' },
-      { fr: 'elon', en: 'Elon', he: 'אלון', audio: '/audio/young/famille/elon.m4a' },
+      { id: 'famille_papa', slug: 'papa', fr: 'papa', en: 'daddy', he: 'אבא' },
+      { id: 'famille_maman', slug: 'maman', fr: 'maman', en: 'mummy', he: 'אמא' },
+      { id: 'famille_aaron', slug: 'aaron', fr: 'aaron', en: 'aaron', he: 'אהרון' },
+      { id: 'famille_naor', slug: 'naor', fr: 'naor', en: 'naor', he: 'נאור' },
+      { id: 'famille_elon', slug: 'elon', fr: 'elon', en: 'elon', he: 'אלון' },
     ],
   },
   {
     key: 'corps',
     words: [
-      { fr: 'tête', en: 'Head', he: 'ראש', audio: '/audio/young/corps/tete.m4a' },
-      { fr: 'main', en: 'Hand', he: 'יד', audio: '/audio/young/corps/main.m4a' },
-      { fr: 'pied', en: 'Foot', he: 'רגל', audio: '/audio/young/corps/pied.m4a' },
-      { fr: 'oreilles', en: 'Ears', he: 'אוזניים', audio: '/audio/young/corps/oreilles.m4a' },
-      { fr: 'bouche', en: 'Mouth', he: 'פה', audio: '/audio/young/corps/bouche.m4a' },
+      { id: 'corps_tete', slug: 'tete', fr: 'tête', en: 'head', he: 'ראש' },
+      { id: 'corps_main', slug: 'main', fr: 'main', en: 'hand', he: 'יד' },
+      { id: 'corps_pied', slug: 'pied', fr: 'pied', en: 'foot', he: 'רגל' },
+      { id: 'corps_oreilles', slug: 'oreilles', fr: 'oreilles', en: 'ears', he: 'אוזניים' },
+      { id: 'corps_bouche', slug: 'bouche', fr: 'bouche', en: 'mouth', he: 'פה' },
     ],
   },
   {
     key: 'animaux',
     words: [
-      { fr: 'lion', en: 'Lion', he: 'אריה', audio: '/audio/young/animaux/lion.m4a' },
-      { fr: 'tigre', en: 'Tiger', he: 'נמר', audio: '/audio/young/animaux/tigre.m4a' },
-      { fr: 'vache', en: 'Cow', he: 'פרה', audio: '/audio/young/animaux/vache.m4a' },
-      { fr: 'tortue', en: 'Turtle', he: 'צב', audio: '/audio/young/animaux/tortue.m4a' },
-      { fr: 'hippopotame', en: 'Hippopotamus', he: 'היפופוטם', audio: '/audio/young/animaux/hippopotame.m4a' },
+      { id: 'animaux_lion', slug: 'lion', fr: 'lion', en: 'lion', he: 'אריה' },
+      { id: 'animaux_tigre', slug: 'tigre', fr: 'tigre', en: 'tiger', he: 'נמר' },
+      { id: 'animaux_vache', slug: 'vache', fr: 'vache', en: 'cow', he: 'פרה' },
+      { id: 'animaux_tortue', slug: 'tortue', fr: 'tortue', en: 'turtle', he: 'צב' },
+      { id: 'animaux_hippopotame', slug: 'hippopotame', fr: 'hippopotame', en: 'hippopotamus', he: 'היפופוטם' },
     ],
   },
   {
     key: 'jouets',
     words: [
-      { fr: 'Ballon', en: 'Ball', he: 'כדור', audio: '/audio/young/jouets/ballon.m4a' },
-      { fr: 'Voiture', en: 'Car', he: 'מכונית', audio: '/audio/young/jouets/voiture.m4a' },
-      { fr: 'Robot', en: 'Robot', he: 'רובוט', audio: '/audio/young/jouets/robot.m4a' },
-      { fr: 'Peluche', en: 'Plushie', he: 'בובה רכה', audio: '/audio/young/jouets/peluche.m4a' },
-      { fr: 'Cubes', en: 'Blocks', he: 'קוביות', audio: '/audio/young/jouets/cubes.m4a' },
+      { id: 'jouets_ballon', slug: 'ballon', fr: 'ballon', en: 'ball', he: 'כדור' },
+      { id: 'jouets_voiture', slug: 'voiture', fr: 'voiture', en: 'car', he: 'מכונית' },
+      { id: 'jouets_robot', slug: 'robot', fr: 'robot', en: 'robot', he: 'רובוט' },
+      { id: 'jouets_peluche', slug: 'peluche', fr: 'peluche', en: 'plushie', he: 'בובה רכה' },
+      { id: 'jouets_cubes', slug: 'cubes', fr: 'cubes', en: 'blocks', he: 'קוביות' },
     ],
   },
   {
     key: 'nourriture',
     words: [
-      { fr: 'Compote', en: 'Compote', he: 'קומפוט', audio: '/audio/young/nourriture/compote.m4a' },
-      { fr: 'Gâteau', en: 'Cake', he: 'עוגה', audio: '/audio/young/nourriture/gateau.m4a' },
-      { fr: 'Banane', en: 'Banana', he: 'בננה', audio: '/audio/young/nourriture/banane.m4a' },
-      { fr: 'Pomme', en: 'Apple', he: 'תפוח', audio: '/audio/young/nourriture/pomme.m4a' },
-      { fr: 'Carotte', en: 'Carrot', he: 'גזר', audio: '/audio/young/nourriture/carotte.m4a' },
+      { id: 'nourriture_compote', slug: 'compote', fr: 'compote', en: 'compote', he: 'קומפוט' },
+      { id: 'nourriture_gateau', slug: 'gateau', fr: 'gâteau', en: 'cake', he: 'עוגה' },
+      { id: 'nourriture_banane', slug: 'banane', fr: 'banane', en: 'banana', he: 'בננה' },
+      { id: 'nourriture_pomme', slug: 'pomme', fr: 'pomme', en: 'apple', he: 'תפוח' },
+      { id: 'nourriture_carotte', slug: 'carotte', fr: 'carotte', en: 'carrot', he: 'גזר' },
     ],
   },
 ]
@@ -188,13 +192,6 @@ export function wordLabel(word: CardWord, lang: Language): string {
   if (lang === 'he') return word.he
   if (lang === 'en') return word.en
   return word.fr
-}
-
-export function whereisAudio(audio: string): string {
-  const slash = audio.lastIndexOf('/')
-  const dir = audio.slice(0, slash)
-  const file = audio.slice(slash + 1)
-  return `${dir}/whereis/whereis_${file}`
 }
 
 export function getCategory(key: string): CartonCategory | undefined {
