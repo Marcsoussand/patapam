@@ -161,10 +161,6 @@ export default function CartonsOverlay({ open, onClose }: CartonsOverlayProps) {
   const learnWordRef = useRef<HTMLDivElement>(null)
   const learnTimersRef = useRef<ReturnType<typeof setTimeout>[]>([])
 
-  const category =
-    categoryKey && categoryWords
-      ? { key: categoryKey, words: categoryWords }
-      : undefined
   const ageLabel =
     ageGroup === 'young'
       ? t('library.cartons.ageYoung')
@@ -222,16 +218,16 @@ export default function CartonsOverlay({ open, onClose }: CartonsOverlayProps) {
 
   const startFindRound = useCallback(
     (seen: string[]) => {
-      if (!category || !categoryKey) return
+      if (!categoryKey || !categoryWords?.length) return
 
-      if (seen.length >= category.words.length) {
+      if (seen.length >= categoryWords.length) {
         exitCardMode()
         return
       }
 
-      const unseen = category.words.filter((w) => !seen.includes(w.id))
+      const unseen = categoryWords.filter((w) => !seen.includes(w.id))
       const correct = shuffle(unseen)[0]
-      const others = category.words.filter((w) => w.id !== correct.id)
+      const others = categoryWords.filter((w) => w.id !== correct.id)
       const wrong = others[Math.floor(Math.random() * others.length)]
       const cards = shuffle([correct, wrong])
 
@@ -241,7 +237,7 @@ export default function CartonsOverlay({ open, onClose }: CartonsOverlayProps) {
       stopAudio()
       void playCartonWhereisAudio(correct, categoryKey, language)
     },
-    [category, categoryKey, exitCardMode, language, stopAudio],
+    [categoryKey, categoryWords, exitCardMode, language, stopAudio],
   )
 
   useEffect(() => {
@@ -264,47 +260,52 @@ export default function CartonsOverlay({ open, onClose }: CartonsOverlayProps) {
   }, [open, resetState])
 
   useEffect(() => {
-    if (cardMode !== 'learn' || !category || !categoryKey) return
+    if (cardMode !== 'learn' || !categoryKey || !categoryWords?.length) return
 
-    if (learnIndex >= category.words.length) {
+    if (learnIndex >= categoryWords.length) {
       exitCardMode()
       return
     }
 
-    if (!learnWordVisible) return
-
-    const word = category.words[learnIndex]
+    setLearnWordVisible(true)
+    const word = categoryWords[learnIndex]
     stopAudio()
     void playCartonLearnAudio(word, categoryKey)
 
-    const hideTimer = setTimeout(() => {
-      setLearnWordVisible(false)
-      const nextTimer = setTimeout(() => {
-        setLearnIndex((i) => i + 1)
-        setLearnWordVisible(true)
-      }, 1000)
-      learnTimersRef.current.push(nextTimer)
-    }, 10000)
-    learnTimersRef.current.push(hideTimer)
+    const hideTimer = setTimeout(() => setLearnWordVisible(false), 10_000)
+    const advanceTimer = setTimeout(() => {
+      setLearnIndex((i) => i + 1)
+    }, 11_000)
+    learnTimersRef.current = [hideTimer, advanceTimer]
 
     return () => {
       clearLearnTimers()
       stopAudio()
     }
-  }, [cardMode, category, categoryKey, learnIndex, learnWordVisible, clearLearnTimers, stopAudio, exitCardMode])
+  }, [
+    cardMode,
+    categoryKey,
+    categoryWords,
+    learnIndex,
+    clearLearnTimers,
+    stopAudio,
+    exitCardMode,
+  ])
 
   useEffect(() => {
-    if (cardMode === 'find' && findRound === null && category) {
+    if (cardMode === 'find' && findRound === null && categoryWords?.length) {
       startFindRound(findSeen)
     }
-  }, [cardMode, findRound, findSeen, category, startFindRound])
+  }, [cardMode, findRound, findSeen, categoryWords, startFindRound])
 
   if (!open) return null
 
   const currentLearnWord =
-    cardMode === 'learn' && category && learnIndex < category.words.length
-      ? category.words[learnIndex]
+    cardMode === 'learn' && categoryWords && learnIndex < categoryWords.length
+      ? categoryWords[learnIndex]
       : null
+
+  const wordsReady = Boolean(categoryWords?.length)
 
   function handleFindPick(card: CardWord, isCorrect: boolean) {
     if (!findRound || findFeedback[card.id]) return
@@ -424,6 +425,7 @@ export default function CartonsOverlay({ open, onClose }: CartonsOverlayProps) {
                 <button
                   type="button"
                   className="cartons-age-btn"
+                  disabled={!wordsReady}
                   onClick={() => {
                     setLearnIndex(0)
                     setLearnWordVisible(true)
@@ -435,6 +437,7 @@ export default function CartonsOverlay({ open, onClose }: CartonsOverlayProps) {
                 <button
                   type="button"
                   className="cartons-age-btn"
+                  disabled={!wordsReady}
                   onClick={() => {
                     setFindSeen([])
                     setFindRound(null)
