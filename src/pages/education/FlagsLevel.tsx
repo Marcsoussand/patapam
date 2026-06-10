@@ -11,11 +11,12 @@ import {
   saveFlagProgress,
   type FlagProgressMap,
 } from '../../lib/flagProgress'
-import { awardProfileCoins, mathVictoryCoins } from '../../lib/awardProfileCoins'
+import { awardProfileCoins } from '../../lib/awardProfileCoins'
 import { awardPack, withPackInventory } from '../../lib/collectionPacks'
 import {
-  earnsFlagPackAtThreeStars,
   flagLevelPackReward,
+  flagsPackOnThreeStars,
+  flagsVictoryCoins,
 } from '../../education/data/flagLevelRewards'
 import type { FlagPanel } from '../../types/flags'
 
@@ -56,13 +57,13 @@ export default function FlagsLevel() {
   const locked = !level || level.id > maxUnlocked
   const previousStars = level ? (progress[flagLevelKey(level.id)] ?? 0) : 0
   const packReward = level ? flagLevelPackReward(level.id) : undefined
-  const packEligible = level ? earnsFlagPackAtThreeStars(level.id, previousStars) : false
+  const packEligible = packReward !== undefined
 
   async function handleComplete(_correct: number, stars: 0 | 1 | 2 | 3): Promise<number> {
     if (!profile || !level) return 0
 
-    const coinsToAdd = mathVictoryCoins(previousStars, stars)
-    const earnPack = earnsFlagPackAtThreeStars(level.id, previousStars) && stars === 3
+    const coinsToAdd = flagsVictoryCoins(previousStars, stars)
+    const earnPack = flagsPackOnThreeStars(level.id, stars)
 
     if (stars >= 1) {
       const best = await saveFlagProgress(profile.id, level.id, stars, previousStars)
