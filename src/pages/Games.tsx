@@ -75,8 +75,8 @@ const MEMORY_LEVELS = [
   { level: 6, cards: 30 },
 ]
 
-/** Délai avant de retourner les cartes non appariées (laisse le temps aux images de s'afficher). */
-const MEMORY_MISMATCH_HIDE_DELAY_MS = 2_000
+/** Délai avant de résoudre une paire (succès ou échec) — laisse le temps de voir les deux cartes. */
+const MEMORY_PAIR_RESOLVE_DELAY_MS = 2_000
 
 /** Délai fin de tour chasse au trésor (ramassage ou bust) avant de cacher les cartes restées ouvertes. */
 const TREASURE_TURN_END_DELAY_MS = 2_000
@@ -565,24 +565,28 @@ export default function Games() {
     if (!firstCard || !secondCard) return
 
     setFlippedMemoryCards([firstIndex, secondIndex])
+    setIsMemoryLocked(true)
 
     if (firstCard.token === secondCard.token) {
-      const nextMatched = [...matchedMemoryCards, firstIndex, secondIndex]
-      setMatchedMemoryCards(nextMatched)
-      setFlippedMemoryCards([])
+      memoryTimeoutRef.current = window.setTimeout(() => {
+        const nextMatched = [...matchedMemoryCards, firstIndex, secondIndex]
+        setMatchedMemoryCards(nextMatched)
+        setFlippedMemoryCards([])
+        setIsMemoryLocked(false)
+        memoryTimeoutRef.current = null
 
-      if (nextMatched.length === memoryCards.length) {
-        setMemoryWon(true)
-      }
+        if (nextMatched.length === memoryCards.length) {
+          setMemoryWon(true)
+        }
+      }, MEMORY_PAIR_RESOLVE_DELAY_MS)
       return
     }
 
-    setIsMemoryLocked(true)
     memoryTimeoutRef.current = window.setTimeout(() => {
       setFlippedMemoryCards([])
       setIsMemoryLocked(false)
       memoryTimeoutRef.current = null
-    }, MEMORY_MISMATCH_HIDE_DELAY_MS)
+    }, MEMORY_PAIR_RESOLVE_DELAY_MS)
   }
 
   function getTreasureCollectableIndices(tiles: TreasureTile[]) {
@@ -1034,7 +1038,19 @@ export default function Games() {
 
       const index = chooseTreasureAiFlipIndex(treasureTiles)
       if (index === null) {
-        endTreasureTurn(0)
+        const hasRevealedCards = treasureTiles.some(
+          (tile) => tile.revealed && tile.collectedBy === null,
+        )
+        if (hasRevealedCards) {
+          setIsTreasureLocked(true)
+          treasureTimeoutRef.current = window.setTimeout(() => {
+            endTreasureTurn(0)
+            setIsTreasureLocked(false)
+            treasureTimeoutRef.current = null
+          }, TREASURE_TURN_END_DELAY_MS)
+        } else {
+          endTreasureTurn(0)
+        }
         treasureAiTimeoutRef.current = null
         return
       }
