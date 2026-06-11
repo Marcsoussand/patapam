@@ -1,5 +1,6 @@
 import { useEffect, useMemo } from 'react'
 import { playMusic, stopMusic } from '../lib/patapamAudio'
+import { useMusicStore } from '../store/musicStore'
 
 /** Lance une musique de fond en boucle au montage ; arrêt au démontage. */
 export function usePageMusic(
@@ -7,15 +8,20 @@ export function usePageMusic(
   loop = true,
   volume = 0.45,
 ): void {
+  const musicEnabled = useMusicStore((s) => s.musicEnabled)
   const stableUrl = useMemo(() => url ?? null, [url])
 
   useEffect(() => {
     if (!stableUrl) return
 
-    void playMusic(stableUrl, { loop, volume })
+    if (musicEnabled) {
+      void playMusic(stableUrl, { loop, volume })
+    } else {
+      stopMusic()
+    }
 
     return () => {
       stopMusic()
     }
-  }, [stableUrl, loop, volume])
+  }, [stableUrl, loop, volume, musicEnabled])
 }

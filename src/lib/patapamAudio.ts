@@ -4,6 +4,8 @@
  * La musique de fond est mise en pause pendant un SFX, puis reprise.
  */
 
+import { useMusicStore } from '../store/musicStore'
+
 let musicAudio: HTMLAudioElement | null = null
 let sfxAudio: HTMLAudioElement | null = null
 let musicDucked = false
@@ -28,6 +30,7 @@ function duckMusicForSfx(): void {
 
 function resumeMusicAfterSfx(): void {
   if (!musicDucked || !musicAudio || sfxAudio) return
+  if (!useMusicStore.getState().musicEnabled) return
   musicDucked = false
   void musicAudio.play().catch(() => {})
 }
@@ -65,6 +68,8 @@ export async function playMusic(
   url: string,
   options?: { loop?: boolean; volume?: number },
 ): Promise<boolean> {
+  if (!useMusicStore.getState().musicEnabled) return false
+
   stopMusic()
   const generation = musicGeneration
   const audio = new Audio(url)

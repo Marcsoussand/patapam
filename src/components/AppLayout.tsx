@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useProfileStore } from '../store/profileStore'
 import LanguageSelector from './LanguageSelector'
+import MusicToggle from './MusicToggle'
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate()
@@ -19,10 +20,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
       {children}
-      {!hideTopOverlay && (
       <div className="fixed top-3 right-3 z-50 flex items-center gap-2 bg-black/30 backdrop-blur-sm rounded-2xl px-3 py-2 shadow-lg">
         <LanguageSelector />
-        {activeProfile && (
+        <div className="w-px h-5 bg-white/40" />
+        <MusicToggle />
+        {!hideTopOverlay && activeProfile && (
           <>
             <div className="w-px h-5 bg-white/40" />
             <div className="flex items-center gap-1 bg-white/20 rounded-full px-3 py-1">
@@ -60,7 +62,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </>
         )}
       </div>
-      )}
     </>
   )
 }
